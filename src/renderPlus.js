@@ -28,7 +28,7 @@ var getPartIDs = function (modelImpl) {
     return partIDs;
 };
 
-var getParamIDs = function (modelImpl) {
+const getParamIDs = function (modelImpl) {
     let paramIDs = [];
     paramDefSet = modelImpl._$E2()._$4S;
     paramDefSet.forEach((element) => {
@@ -39,8 +39,8 @@ var getParamIDs = function (modelImpl) {
 
 // JavaScriptで発生したエラーを取得
 window.onerror = function (msg, url, line, col, error) {
-    var errmsg = "file:" + url + "<br>line:" + line + " " + msg;
-    l2dError(errmsg);
+    const err = "file:" + url + "<br>line:" + line + " " + msg;
+    l2dError(err);
 };
 
 function viewer() {
@@ -69,6 +69,7 @@ function viewer() {
     this.isPlay = true;
     this.isLookRandom = false;
     this.frameCount = 0;
+    this.usingPixi = true;
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
@@ -249,13 +250,13 @@ viewer.resize = function() {
     // canvas.height = baseHeight;
 
     // ビュー行列
-    var ratio = canvas.height / canvas.width;
-    var left = LAppDefine.VIEW_LOGICAL_LEFT;
-    var right = LAppDefine.VIEW_LOGICAL_RIGHT;
-    var bottom = -ratio;
-    var top = ratio;
+    const ratio = canvas.height / canvas.width;
+    const left = LAppDefine.VIEW_LOGICAL_LEFT;
+    const right = LAppDefine.VIEW_LOGICAL_RIGHT;
+    const bottom = -ratio;
+    const top = ratio;
 
-    viewMatrix = new L2DViewMatrix();
+    let viewMatrix = new L2DViewMatrix();
 
     // デバイスに対応する画面の範囲。 Xの左端, Xの右端, Yの下端, Yの上端
     viewMatrix.setScreenRect(left, right, bottom, top);
@@ -275,7 +276,7 @@ viewer.resize = function() {
     projMatrix.multScale(1, canvas.width / canvas.height);
 
     // マウス用スクリーン変換行列
-    deviceToScreen = new L2DMatrix44();
+    let deviceToScreen = new L2DMatrix44();
     deviceToScreen.multTranslate(-canvas.width / 2.0, -canvas.height / 2.0);
     deviceToScreen.multScale(2 / canvas.width, -2 / canvas.width);
 

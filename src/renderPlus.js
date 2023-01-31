@@ -114,7 +114,7 @@ viewer.save = function (filepath = path.join(outputRoot, "image.png")) {
     fs.writeFileSync(filepath, buf);
 };
 
-viewer.saveLayer = function (dir = path.join(outputRoot, "layer")) {
+viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     // Create dir
     fs.mkdirSync(dir, { recursive: true });
 
@@ -155,12 +155,12 @@ viewer.saveLayer = function (dir = path.join(outputRoot, "layer")) {
     isPlay = prevIsPlay;
 };
 
-viewer.togglePlayPause = function () {
+viewer.togglePlayPause = function() {
     isPlay = !isPlay;
     btnPlayPause.textContent = isPlay ? "Pause" : "Play";
 };
 
-viewer.secret = function () {
+viewer.secret = function() {
     // Print model stat
     var live2DModel = live2DMgr.getModel(0).live2DModel;
     var modelImpl = live2DModel.getModelImpl();
@@ -180,7 +180,7 @@ viewer.secret = function () {
 };
 
 // TODO
-viewer.batch = function () {
+viewer.batch = function() {
     var count = live2DMgr.getCount();
     op = function () {
         if (count < live2DMgr.modelJsonList.length) {
@@ -228,14 +228,14 @@ viewer.batch = function () {
     op();
 };
 
-viewer.resize = function () {
-    const baseHeight = 1024;
+viewer.resize = function() {
+    const baseHeight = 512;
 
     live2DModel = live2DMgr.getModel(0).live2DModel;
     if (live2DModel == null) return;
 
-    var modelWidth = live2DModel.getCanvasWidth();
-    var modelHeight = live2DModel.getCanvasHeight();
+    const modelWidth = live2DModel.getCanvasWidth();
+    const modelHeight = live2DModel.getCanvasHeight();
     if (modelHeight > modelWidth) {
         // Portrait
         canvas.width = baseResolution;
@@ -282,7 +282,7 @@ viewer.resize = function () {
     gl.viewport(0, 0, canvas.width, canvas.height);
 };
 
-viewer.initL2dCanvas = function (canvasId) {
+viewer.initL2dCanvas = function(canvasId) {
     // canvasオブジェクトを取得
     canvas = document.getElementById(canvasId);
 
@@ -305,7 +305,7 @@ viewer.initL2dCanvas = function (canvasId) {
     }
 };
 
-viewer.init = function () {
+function connectBtn() {
     // Initialize UI components
     btnPrev = document.getElementById("btnPrev");
     btnNext = document.getElementById("btnNext");
@@ -366,12 +366,23 @@ viewer.init = function () {
         live2DMgr.nextIdleMotion();
     });
 
+}
+
+function loadModels() {
     // Load all models
     let filelist = [];
     walkdir(datasetRoot, function (filepath) {
-        filelist.push(filepath);
+        if (filepath.endsWith(".moc3") || filepath.endsWith(".moc")) {
+            filelist.push(filepath);
+        }
     });
+    console.log("file list: " + filelist);
     live2DMgr.setModelJsonList(loadModel(filelist));
+}
+
+viewer.init = function() {
+    connectBtn();
+    loadModels();
 
     // 3Dバッファの初期化
     var width = canvas.width;
@@ -428,7 +439,7 @@ viewer.init = function () {
     viewer.startDraw();
 };
 
-viewer.startDraw = function () {
+viewer.startDraw = function() {
     if (!isDrawStart) {
         isDrawStart = true;
         (function tick() {
@@ -563,11 +574,17 @@ function md5file(filePath) {
 function loadModel(filelist) {
     let modelJsonList = [];
     filelist.forEach((filepath) => {
+        console.log(" filepath: " + filepath);
         if (filepath.endsWith(".moc")) {
+            console.log("It's a v2 moc");
             modelJson = loadModelJson(filepath);
+            console.log("model: " + modelJson);
             if (modelJson) {
                 modelJsonList.push(...modelJson);
             }
+        }
+        if (filepath.endsWith(".moc3")) {
+            console.log("It's a v3 moc");
         }
     });
     modelJsonList = [...new Set(modelJsonList)];
@@ -620,8 +637,8 @@ function loadModelJson(mocPath) {
         }
     });
     // Generate a JSON file based on all the resources we can find
-    if (modelJson.length == 0) {
-        if (textures.length == 0) {
+    if (modelJson.length === 0) {
+        if (textures.length === 0) {
             console.warn(
                 "[loadModelJson]",
                 "0 texture found! .moc path: " + mocPath

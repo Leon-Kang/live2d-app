@@ -73,13 +73,13 @@ function viewer() {
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
         var keyCode = e.keyCode;
-        if (keyCode == 90) {
+        if (keyCode === 90) {
             // z key
             viewer.changeModel(-1);
-        } else if (keyCode == 88) {
+        } else if (keyCode === 88) {
             // x key
             viewer.changeModel(1);
-        } else if (keyCode == 32) {
+        } else if (keyCode === 32) {
             // space key
             viewer.flagBlacklist();
         }
@@ -577,14 +577,14 @@ function loadModel(filelist) {
         console.log(" filepath: " + filepath);
         if (filepath.endsWith(".moc")) {
             console.log("It's a v2 moc");
-            modelJson = loadModelJson(filepath);
-            console.log("model: " + modelJson);
-            if (modelJson) {
-                modelJsonList.push(...modelJson);
-            }
         }
         if (filepath.endsWith(".moc3")) {
             console.log("It's a v3 moc");
+        }
+        modelJson = loadModelJson(filepath);
+        console.log("model: " + modelJson);
+        if (modelJson) {
+            modelJsonList.push(...modelJson);
         }
     });
     modelJsonList = [...new Set(modelJsonList)];

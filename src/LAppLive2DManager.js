@@ -1,4 +1,4 @@
-const { TouchBarOtherItemsProxy } = require("electron");
+const {TouchBarOtherItemsProxy} = require("electron");
 
 function LAppLive2DManager() {
     // console.log("--> LAppLive2DManager()");
@@ -136,7 +136,7 @@ LAppLive2DManager.prototype.nextIdleMotion = function () {
     return true;
 };
 
-LAppLive2DManager.prototype.currentIdleMotion = function(){
+LAppLive2DManager.prototype.currentIdleMotion = function () {
     for (var i = 0; i < this.models.length; i++) {
         // return this.models[i].getCurrentIdleMotion();
         return this.models[i].currentIdleMotion;
@@ -144,14 +144,14 @@ LAppLive2DManager.prototype.currentIdleMotion = function(){
     return 0;
 }
 
-LAppLive2DManager.prototype.idleMotionNum = function(){
+LAppLive2DManager.prototype.idleMotionNum = function () {
     for (var i = 0; i < this.models.length; i++) {
         return this.models[i].getIdleMotionNum();
     }
     return 0;
 }
 
-LAppLive2DManager.prototype.getMocPath = function(){
+LAppLive2DManager.prototype.getMocPath = function () {
     for (var i = 0; i < this.models.length; i++) {
         return this.models[i].modelPath;
     }

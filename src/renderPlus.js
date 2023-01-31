@@ -4,6 +4,9 @@ const path = require("path");
 const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
 
+const { Live2DModel } = require("pixi-live2d-display");
+const PIXI = require("pixi.js");
+
 nativeTheme.themeSource = "dark";
 
 // Parameters
@@ -43,7 +46,10 @@ window.onerror = function (msg, url, line, col, error) {
     l2dError(err);
 };
 
+window.PIXI = PIXI;
+
 function viewer() {
+    PIXI.unsafeEvalSupported();
     this.platform = window.navigator.platform.toLowerCase();
 
     this.live2DMgr = new LAppLive2DManager();
@@ -70,6 +76,10 @@ function viewer() {
     this.isLookRandom = false;
     this.frameCount = 0;
     this.usingPixi = true;
+
+    this.app = new PIXI.Application({
+        view: document.getElementById('glcanvas'),
+    });
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
@@ -256,7 +266,7 @@ viewer.resize = function() {
     const bottom = -ratio;
     const top = ratio;
 
-    let viewMatrix = new L2DViewMatrix();
+    viewMatrix = new L2DViewMatrix();
 
     // デバイスに対応する画面の範囲。 Xの左端, Xの右端, Yの下端, Yの上端
     viewMatrix.setScreenRect(left, right, bottom, top);
@@ -369,7 +379,8 @@ function connectBtn() {
 
 }
 
-function loadModels() {
+async function loadModels() {
+
     // Load all models
     let filelist = [];
     walkdir(datasetRoot, function (filepath) {
@@ -377,6 +388,11 @@ function loadModels() {
             filelist.push(filepath);
         }
     });
+    if (this.usingPixi) {
+        const model = await Live2DModel.from(filelist[0]);
+        this.app.stage.addChild(model);
+        return;
+    }
     console.log("file list: " + filelist);
     live2DMgr.setModelJsonList(loadModel(filelist));
 }
@@ -386,17 +402,17 @@ viewer.init = function() {
     loadModels();
 
     // 3Dバッファの初期化
-    var width = canvas.width;
-    var height = canvas.height;
+    const width = canvas.width;
+    const height = canvas.height;
 
     dragMgr = new L2DTargetPoint();
 
     // ビュー行列
-    var ratio = height / width;
-    var left = LAppDefine.VIEW_LOGICAL_LEFT;
-    var right = LAppDefine.VIEW_LOGICAL_RIGHT;
-    var bottom = -ratio;
-    var top = ratio;
+    const ratio = height / width;
+    const left = LAppDefine.VIEW_LOGICAL_LEFT;
+    const right = LAppDefine.VIEW_LOGICAL_RIGHT;
+    const bottom = -ratio;
+    const top = ratio;
 
     viewMatrix = new L2DViewMatrix();
 

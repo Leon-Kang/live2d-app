@@ -15,11 +15,6 @@ const baseResolution = 1024;
 
 const thisRef = this;
 
-window.onerror = function (msg, url, line, col, error) {
-    const err = "file:" + url + "<br>line:" + line + " " + msg;
-    console.log(err);
-};
-
 window.PIXI = PIXI;
 install({ ShaderSystem });
 
@@ -34,7 +29,7 @@ async function pixiViewer() {
 
     PIXI.extensions.add(InteractionManager);
     Live2DModel.registerTicker(Ticker);
-    this.app.renderer.backgroundColor = 0xFF5733
+    this.app.renderer.backgroundColor = 0xFFFFF
 
     const model = await loadPixiModel();
 
@@ -61,7 +56,7 @@ function walkdir(dir, callback) {
 function loadPixiModel() {
     let filelist = [];
     walkdir("dataset", function (filepath) {
-        if (filepath.endsWith(".model3.json")) {
+        if (filepath.endsWith(".model.json") || filepath.endsWith(".model3.json")) {
             filelist.push(filepath);
         }
     });

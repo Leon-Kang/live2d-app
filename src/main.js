@@ -1,5 +1,7 @@
 const { app, BrowserWindow } = require('electron')
 
+
+
 function createWindow () {
   // Create the browser window.
   const win = new BrowserWindow({
@@ -7,7 +9,8 @@ function createWindow () {
     height: 1080,
     webPreferences: {
       nodeIntegration: true
-    }
+    },
+    title: 'live2d'
   })
 
   const view = new BrowserWindow({
@@ -15,11 +18,12 @@ function createWindow () {
     height: 1080,
     webPreferences: {
       nodeIntegration: true
-    }
+    },
+    title: 'pixi-2d'
   })
-  view.loadFile('index.html')
+  view.loadFile('pixiRender.html')
 
-  win.loadFile('pixiRender.html')
+  win.loadFile('index.html')
 
   win.addTabbedWindow(view)
 
@@ -36,6 +40,22 @@ function createWindow () {
 }
 
 app.whenReady().then(createWindow)
+
+app.on('new-window-for-tab', (event) => {
+  const window = require('electron').BrowserWindow;
+  const newWin = new BrowserWindow({
+    width: 1920,
+    height: 1080,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
+  newWin.loadFile(window.getAllWindows().length % 2 === 1 ? 'pixiRender.html' : 'index.html')
+  newWin.webContents.openDevTools()
+  newWin.webContents.on('devtools-opened', () => {
+    newWin.webContents.focus();
+  });
+})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

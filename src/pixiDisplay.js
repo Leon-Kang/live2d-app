@@ -27,8 +27,8 @@ async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
     this.app = new PIXI.Application({
         view: document.getElementById('canvas'),
-        width: 1024,
-        height: 1024,
+        width: 2024,
+        height: 2024,
         autoStart: true,
     });
 
@@ -38,7 +38,11 @@ async function pixiViewer() {
 
     const model = await loadPixiModel();
 
+    model.left = 0
+    model.top = 0
+
     this.app.stage.addChild(model);
+    this.app.resize();
 }
 
 function walkdir(dir, callback) {

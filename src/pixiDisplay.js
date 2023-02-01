@@ -7,6 +7,7 @@ const { InteractionManager } = require('@pixi/interaction');
 const { ShaderSystem } = require("@pixi/core")
 
 const { install } = require("@pixi/unsafe-eval");
+const {Transform} = require("@pixi/math");
 
 const datasetRoot = "dataset"; // Root of dataset directory
 const outputRoot = "output"; // Root of output directory
@@ -22,8 +23,8 @@ async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
     this.app = new PIXI.Application({
         view: document.getElementById('canvas'),
-        width: 2024,
-        height: 2024,
+        width: 1024,
+        height: 1024,
         autoStart: true,
     });
 
@@ -32,12 +33,23 @@ async function pixiViewer() {
     this.app.renderer.backgroundColor = 0xFFFFF
 
     const model = await loadPixiModel();
-
-    model.left = 0
-    model.top = 0
-
+    this.model = model;
     this.app.stage.addChild(model);
-    this.app.resize();
+    console.log(model.motion)
+    const modelWidth = model.width;
+    const modelHeight = model.height;
+
+    const canvas = document.getElementById('canvas');
+
+    if (modelHeight > modelWidth) {
+        // Portrait
+        model.width = baseResolution;
+        model.height = (modelHeight / modelWidth) * baseResolution;
+    } else {
+        model.width = (modelWidth / modelHeight) * baseResolution;
+        model.height = baseResolution;
+    }
+
 }
 
 function walkdir(dir, callback) {
@@ -64,4 +76,19 @@ function loadPixiModel() {
     const last = filelist[0];
     console.log(last);
     return Live2DModel.from(last);
+}
+
+function getWebGLContext() {
+    var NAMES = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+
+    for (var i = 0; i < NAMES.length; i++) {
+        try {
+            var ctx = this.canvas.getContext(NAMES[i], {
+                premultipliedAlpha: true,
+                preserveDrawingBuffer: true,
+            });
+            if (ctx) return ctx;
+        } catch (e) {}
+    }
+    return null;
 }

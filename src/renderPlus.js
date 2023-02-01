@@ -138,6 +138,9 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     viewer.save(path.join(dir, "all.png"));
 
     elementList.forEach((item, index) => {
+        if (gl.COLOR_BUFFER_BIT < 128) {
+            return;
+        }
         var element = item.element;
         var partID = item.partID;
         var order = ("000" + index).slice(-4);

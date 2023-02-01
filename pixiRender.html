@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>pixi-js</title>
+  <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+</head>
+
+<body onload="pixiViewer()">
+<div style="max-height: 1024px;max-width:1024px;overflow: scroll;">
+  <canvas id="canvas" width="1024px" height="1024px"></canvas>
+</div>
+
+<!-- Live2D Library -->
+<script src="src/live2d/live2dcubismcore.min.js"></script>
+<script src="src/live2d/live2d.min.js"></script>
+
+<script src="src/pixiDisplay.js"></script>
+
+<div id="txtInfo" style="color: #ffffff; background-color: transparent"></div>
+
+<p>
+  <button id="btnPrev" class="active">Prev Model</button>
+  <button id="btnNext" class="active">Next Model</button>
+  <label for="editGoto"></label>
+  <input type="number" id="editGoto" min="1" value="1">
+  <button id="btnGoto">Goto Model</button>
+  <button id="btnPlayPause">Play</button>
+  <button id="btnSave">Save As Image</button>
+  <button id="btnSaveLayer">Save As Layers</button>
+  <button id="btnSecret">Secret</button>
+  <button id="btnBatch">Batch</button>
+  <button id="btnResize">Resize</button>
+  <button id="btnLookRandom">Look Random</button>
+  <button id="btnPrevMotion">Prev Motion</button>
+  <button id="btnNextMotion">Next Motion</button>
+</p>
+</body>
+
+</html>

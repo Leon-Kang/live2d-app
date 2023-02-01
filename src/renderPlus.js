@@ -69,7 +69,6 @@ function viewer() {
     this.isPlay = true;
     this.isLookRandom = false;
     this.frameCount = 0;
-    this.usingPixi = true;
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
@@ -139,6 +138,9 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     viewer.save(path.join(dir, "all.png"));
 
     elementList.forEach((item, index) => {
+        if (gl.COLOR_BUFFER_BIT < 128) {
+            return;
+        }
         var element = item.element;
         var partID = item.partID;
         var order = ("000" + index).slice(-4);
@@ -256,7 +258,7 @@ viewer.resize = function() {
     const bottom = -ratio;
     const top = ratio;
 
-    let viewMatrix = new L2DViewMatrix();
+    viewMatrix = new L2DViewMatrix();
 
     // デバイスに対応する画面の範囲。 Xの左端, Xの右端, Yの下端, Yの上端
     viewMatrix.setScreenRect(left, right, bottom, top);
@@ -369,7 +371,7 @@ function connectBtn() {
 
 }
 
-function loadModels() {
+async function loadModels() {
     // Load all models
     let filelist = [];
     walkdir(datasetRoot, function (filepath) {
@@ -387,17 +389,17 @@ viewer.init = function() {
     loadModels();
 
     // 3Dバッファの初期化
-    var width = canvas.width;
-    var height = canvas.height;
+    const width = canvas.width;
+    const height = canvas.height;
 
     dragMgr = new L2DTargetPoint();
 
     // ビュー行列
-    var ratio = height / width;
-    var left = LAppDefine.VIEW_LOGICAL_LEFT;
-    var right = LAppDefine.VIEW_LOGICAL_RIGHT;
-    var bottom = -ratio;
-    var top = ratio;
+    const ratio = height / width;
+    const left = LAppDefine.VIEW_LOGICAL_LEFT;
+    const right = LAppDefine.VIEW_LOGICAL_RIGHT;
+    const bottom = -ratio;
+    const top = ratio;
 
     viewMatrix = new L2DViewMatrix();
 

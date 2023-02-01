@@ -373,7 +373,8 @@ function loadModels() {
     // Load all models
     let filelist = [];
     walkdir(datasetRoot, function (filepath) {
-        if (filepath.endsWith(".moc3") || filepath.endsWith(".moc")) {
+        // todo: filepath.endsWith(".moc3") ||
+        if (filepath.endsWith(".moc")) {
             filelist.push(filepath);
         }
     });

@@ -10,7 +10,7 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: true
     },
-    title: 'live2d'
+    title: 'live2d-app'
   })
 
   const view = new BrowserWindow({
@@ -19,7 +19,7 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: true
     },
-    title: 'pixi-2d'
+    title: 'pixi-render'
   })
   view.loadFile('pixiRender.html')
 

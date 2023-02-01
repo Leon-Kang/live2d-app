@@ -4,9 +4,6 @@ const path = require("path");
 const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
 
-const { Live2DModel } = require("pixi-live2d-display");
-const PIXI = require("pixi.js");
-
 nativeTheme.themeSource = "dark";
 
 // Parameters
@@ -46,10 +43,7 @@ window.onerror = function (msg, url, line, col, error) {
     l2dError(err);
 };
 
-window.PIXI = PIXI;
-
 function viewer() {
-    PIXI.unsafeEvalSupported();
     this.platform = window.navigator.platform.toLowerCase();
 
     this.live2DMgr = new LAppLive2DManager();
@@ -75,11 +69,6 @@ function viewer() {
     this.isPlay = true;
     this.isLookRandom = false;
     this.frameCount = 0;
-    this.usingPixi = true;
-
-    this.app = new PIXI.Application({
-        view: document.getElementById('glcanvas'),
-    });
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
@@ -380,7 +369,6 @@ function connectBtn() {
 }
 
 async function loadModels() {
-
     // Load all models
     let filelist = [];
     walkdir(datasetRoot, function (filepath) {
@@ -389,11 +377,6 @@ async function loadModels() {
             filelist.push(filepath);
         }
     });
-    if (this.usingPixi) {
-        const model = await Live2DModel.from(filelist[0]);
-        this.app.stage.addChild(model);
-        return;
-    }
     console.log("file list: " + filelist);
     live2DMgr.setModelJsonList(loadModel(filelist));
 }

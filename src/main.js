@@ -10,19 +10,31 @@ function createWindow () {
     }
   })
 
-  // and load the index.html of the app.
-  win.loadFile('index.html')
+  const view = new BrowserWindow({
+    width: 1920,
+    height: 1080,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
+  view.loadFile('index.html')
+
+  win.loadFile('pixiRender.html')
+
+  win.addTabbedWindow(view)
 
   // Open the DevTools.
   win.webContents.openDevTools()
   win.webContents.on('devtools-opened', () => {
     win.webContents.focus();
   });
+
+  view.webContents.openDevTools()
+  win.webContents.on('devtools-opened', () => {
+    win.webContents.focus();
+  });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(createWindow)
 
 // Quit when all windows are closed, except on macOS. There, it's common

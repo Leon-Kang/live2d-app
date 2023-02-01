@@ -5,34 +5,32 @@
     <meta charset="UTF-8">
     <title>Live2D Tool</title>
     <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval'" />
 </head>
 
-<body onload="pixiViewer()">
+<body onload="viewer()">
 <div style="max-height: 900px;max-width:900px;overflow: scroll;">
-    <canvas id="canvas" width="1024px" height="1024px"></canvas>
+    <canvas id="glcanvas" width="1024px" height="1024px" style="border:dashed 1px #CCC"></canvas>
 </div>
 
 <!-- Live2D Library -->
-<script src="src/live2d/live2dcubismcore.min.js"></script>
-<script src="src/live2d/live2d.min.js"></script>
+<script src="src/live2d/live2d.core.js"></script>
 
 <!-- Live2D Framework -->
-<!--<script src="src/live2d/Live2DFramework.js"></script>-->
+<script src="src/live2d/Live2DFramework.js"></script>
 
 <!-- User's Script (Plus) -->
-<!--<script src="src/utils/MatrixStack.js"></script>-->
-<!--<script src="src/utils/ModelSettingJson.js"></script>-->
-<!--<script src="src/PlatformManager.js"></script>-->
-<!--<script src="src/LAppDefine.js"></script>-->
-<!--<script src="src/LAppModel.js"></script>-->
-<!--<script src="src/LAppLive2DManager.js"></script>-->
-<script src="src/pixiDisplay.js"></script>
+<script src="src/utils/MatrixStack.js"></script>
+<script src="src/utils/ModelSettingJson.js"></script>
+<script src="src/PlatformManager.js"></script>
+<script src="src/LAppDefine.js"></script>
+<script src="src/LAppModel.js"></script>
+<script src="src/LAppLive2DManager.js"></script>
+<script src="src/renderPlus.js"></script>
 <div id="txtInfo" style="color: #ffffff; background-color: transparent"></div>
 <p>
     <button id="btnPrev" class="active">Prev Model</button>
     <button id="btnNext" class="active">Next Model</button>
-    <label for="editGoto"></label>
     <input type="number" id="editGoto" min="1" value="1">
     <button id="btnGoto">Goto Model</button>
     <button id="btnPlayPause">Play</button>

@@ -24,6 +24,7 @@
     "@pixi/loaders": "^6.5.9",
     "@pixi/runner": "^6.5.9",
     "@pixi/extensions": "^6.5.9",
+    "@pixi/unsafe-eval": "^6.5.9",
     "package.json": "^2.0.1",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^6.5.9"

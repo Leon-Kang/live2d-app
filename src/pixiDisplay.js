@@ -4,6 +4,9 @@ const path = require("path");
 const fs = require("fs");
 const { Ticker, TickerPlugin } = require("@pixi/ticker")
 const { InteractionManager } = require('@pixi/interaction');
+const { ShaderSystem } = require("@pixi/core")
+
+const { install } = require("@pixi/unsafe-eval");
 
 const datasetRoot = "dataset"; // Root of dataset directory
 const outputRoot = "output"; // Root of output directory
@@ -18,6 +21,7 @@ window.onerror = function (msg, url, line, col, error) {
 };
 
 window.PIXI = PIXI;
+install({ ShaderSystem });
 
 async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
@@ -58,7 +62,7 @@ function loadPixiModel() {
         }
     });
     console.log("pixi file path: " + filelist);
-    const last = filelist[filelist.length - 1];
+    const last = filelist[0];
     console.log(last);
     return Live2DModel.from(last);
 }

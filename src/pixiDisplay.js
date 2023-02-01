@@ -36,10 +36,16 @@ async function pixiViewer() {
     this.model = model;
     this.app.stage.addChild(model);
     console.log(model.motion)
+
+    resizeModel(model)
+
+    this.motions = model.motions;
+    console.log(this.groups)
+}
+
+function resizeModel(model) {
     const modelWidth = model.width;
     const modelHeight = model.height;
-
-    const canvas = document.getElementById('canvas');
 
     if (modelHeight > modelWidth) {
         // Portrait
@@ -49,7 +55,6 @@ async function pixiViewer() {
         model.width = (modelWidth / modelHeight) * baseResolution;
         model.height = baseResolution;
     }
-
 }
 
 function walkdir(dir, callback) {

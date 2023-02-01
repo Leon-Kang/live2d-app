@@ -1,17 +1,15 @@
-const { Live2DModel, Cubism2ModelSettings } = require("pixi-live2d-display");
+const { Live2DModel } = require("pixi-live2d-display");
 const PIXI = require("pixi.js");
 const path = require("path");
 const fs = require("fs");
-const { Ticker, TickerPlugin } = require("@pixi/ticker")
+const { Ticker } = require("@pixi/ticker")
 const { InteractionManager } = require('@pixi/interaction');
 const { ShaderSystem } = require("@pixi/core")
 
 const { install } = require("@pixi/unsafe-eval");
-const {Transform} = require("@pixi/math");
 
 const datasetRoot = "dataset"; // Root of dataset directory
 const outputRoot = "output"; // Root of output directory
-const blacklistPath = path.join(outputRoot, "blacklist.txt"); // Blacklist path
 const baseResolution = 1024;
 
 const thisRef = this;
@@ -35,12 +33,11 @@ async function pixiViewer() {
     const model = await loadPixiModel();
     this.model = model;
     this.app.stage.addChild(model);
-    console.log(model.motion)
+    console.log(model.motion);
 
-    resizeModel(model)
-
+    resizeModel(model);
     this.motions = model.motions;
-    console.log(this.groups)
+    console.log(this.groups);
 }
 
 function resizeModel(model) {
@@ -84,11 +81,11 @@ function loadPixiModel() {
 }
 
 function getWebGLContext() {
-    var NAMES = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+    const NAMES = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
 
-    for (var i = 0; i < NAMES.length; i++) {
+    for (let i = 0; i < NAMES.length; i++) {
         try {
-            var ctx = this.canvas.getContext(NAMES[i], {
+            const ctx = this.canvas.getContext(NAMES[i], {
                 premultipliedAlpha: true,
                 preserveDrawingBuffer: true,
             });

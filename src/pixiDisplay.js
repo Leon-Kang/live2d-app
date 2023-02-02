@@ -1,10 +1,9 @@
 const { Live2DModel } = require("pixi-live2d-display");
 const PIXI = require("pixi.js");
-const path = require("path");
-const fs = require("fs");
+
 const { Ticker, TickerPlugin } = require("@pixi/ticker")
 const { InteractionManager } = require('@pixi/interaction');
-const { ShaderSystem } = require("@pixi/core")
+const { ShaderSystem, renderer } = require("@pixi/core")
 
 const { install } = require("@pixi/unsafe-eval");
 
@@ -49,14 +48,36 @@ async function renderModel(model) {
     const canvas = document.getElementById('canvas');
     this.app = new PIXI.Application({
         view: canvas,
-        width: 1024,
-        height: 1024,
+        width: 2048,
+        height: 2048,
         autoStart: true,
         clearBeforeRender: true,
         backgroundColor: 0xFFFFF,
+        resizeTo: window,
+        antialias: true,
+        backgroundAlpha: 0.75,
     });
     await this.app.stage.addChild(model);
-    resizeModel(model);
+    // resizeModel(model);
+    const motionManager = model.internalModel.motionManager;
+
+    model.position.set(32, 32);
+
+    console.log(this.app, this.app.renderer)
+    fit(this.app.renderer.width, this.app.renderer.height, model);
+
+    const motionGroups = []
+    const definitions = motionManager.definitions;
+    console.log("motion definitions: " + definitions);
+    for (const [group, motions] of Object.entries(definitions)) {
+        motionGroups.push({
+            name: group,
+            motions: motions?.map((motion, index) => ({
+                file: motion.file || motion.File || '',
+            })) || [],
+        });
+    }
+    console.log("motion group: " + motionGroups);
 }
 
 function resizeModel(model) {
@@ -79,18 +100,9 @@ function connectBtn() {
         console.log('selectedPath: ' + this.selectedPaths);
         await loadModel(paths);
     });
-}
-
-function walkdir(dir, callback) {
-    const files = fs.readdirSync(dir);
-    files.forEach((file) => {
-        const filepath = path.join(dir, file);
-        const stats = fs.statSync(filepath);
-        if (stats.isDirectory()) {
-            walkdir(filepath, callback);
-        } else if (stats.isFile()) {
-            callback(filepath);
-        }
+    const btnSave = document.getElementById("btnSave");
+    btnSave.addEventListener("click", function (e) {
+        saveToPng(path.join(outputRoot, "image.png"), 'canvas');
     });
 }
 
@@ -108,17 +120,20 @@ function loadPixiModel(paths) {
     return Live2DModel.from(last);
 }
 
-function getWebGLContext() {
-    const NAMES = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+function fit(width, height, model) {
+    if (model) {
+        let scales = Math.min(width / model.width, height / model.height);
 
-    for (let i = 0; i < NAMES.length; i++) {
-        try {
-            const ctx = this.canvas.getContext(NAMES[i], {
-                premultipliedAlpha: true,
-                preserveDrawingBuffer: true,
-            });
-            if (ctx) return ctx;
-        } catch (e) {}
+        scales = Math.round(scales * 10) / 10;
+        scale(scales, scales, model);
     }
-    return null;
+}
+
+function scale(scaleX, scaleY, model) {
+    this._scaleX = scaleX ?? this._scaleX;
+    this._scaleY = scaleY ?? this._scaleY;
+
+    if (model) {
+        model.scale.set(this._scaleX, this._scaleY);
+    }
 }

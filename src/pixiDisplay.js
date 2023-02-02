@@ -2,7 +2,7 @@ const { Live2DModel } = require("pixi-live2d-display");
 const PIXI = require("pixi.js");
 const path = require("path");
 const fs = require("fs");
-const { Ticker } = require("@pixi/ticker")
+const { Ticker, TickerPlugin } = require("@pixi/ticker")
 const { InteractionManager } = require('@pixi/interaction');
 const { ShaderSystem } = require("@pixi/core")
 
@@ -10,36 +10,53 @@ const { install } = require("@pixi/unsafe-eval");
 
 const datasetRoot = "dataset"; // Root of dataset directory
 const outputRoot = "output"; // Root of output directory
-const baseResolution = 1024;
+const baseResolution = 512;
 
 const thisRef = this;
 
 window.PIXI = PIXI;
+PIXI.extensions.add(InteractionManager);
+PIXI.extensions.add(TickerPlugin);
+Live2DModel.registerTicker(Ticker);
+
 install({ ShaderSystem });
 
 async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
+
+    this.selectedPaths = ""
+
+    await loadModel();
+
+    connectBtn();
+}
+
+async function loadModel(modelPath) {
+    let model;
+    if (modelPath) {
+        modelPath = 'file://' + modelPath;
+        console.log("path: " + modelPath)
+        model = await Live2DModel.from(modelPath, {
+            autoInteract: true,
+        });
+    } else {
+        model = await loadPixiModel();
+    }
+    await renderModel(model);
+}
+
+async function renderModel(model) {
+    const canvas = document.getElementById('canvas');
     this.app = new PIXI.Application({
-        view: document.getElementById('canvas'),
+        view: canvas,
         width: 1024,
         height: 1024,
         autoStart: true,
+        clearBeforeRender: true,
+        backgroundColor: 0xFFFFF,
     });
-
-    PIXI.extensions.add(InteractionManager);
-    Live2DModel.registerTicker(Ticker);
-    this.app.renderer.backgroundColor = 0xFFFFF
-
-    const model = await loadPixiModel();
-    this.model = model;
-    this.app.stage.addChild(model);
-    console.log(model.motion);
-
+    await this.app.stage.addChild(model);
     resizeModel(model);
-    this.motions = model.motions;
-    console.log(this.groups);
-
-    connectBtn();
 }
 
 function resizeModel(model) {
@@ -57,20 +74,11 @@ function resizeModel(model) {
 }
 
 function connectBtn() {
-    const selectBtn = document.getElementById('select');
-    selectBtn.addEventListener('click', function () {
-        const dialog = require('electron').remote.dialog;
-        dialog.showOpenDialog({
-            properties: ['openFile', 'multiSelections'],
-            filters: [
-                { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
-                { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
-                { name: 'Custom File Type', extensions: ['as'] },
-                { name: 'All Files', extensions: ['*'] }
-            ]}).then(r => {
-            console.log(r);
-        })
-     })
+    addFilePicker('select', async function (paths) {
+        this.selectedPaths = paths;
+        console.log('selectedPath: ' + this.selectedPaths);
+        await loadModel(paths);
+    });
 }
 
 function walkdir(dir, callback) {
@@ -86,9 +94,10 @@ function walkdir(dir, callback) {
     });
 }
 
-function loadPixiModel() {
+function loadPixiModel(paths) {
     let filelist = [];
-    walkdir("dataset", function (filepath) {
+
+    walkdir(paths || "dataset", function (filepath) {
         if (filepath.endsWith(".model.json") || filepath.endsWith(".model3.json")) {
             filelist.push(filepath);
         }

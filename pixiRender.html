@@ -9,19 +9,15 @@
 </head>
 
 <body onload="pixiViewer()">
-<div style="max-height: 1024px;max-width:1024px;overflow: scroll;">
-  <canvas id="canvas" width="1024px" height="1024px"></canvas>
-</div>
 
 <!-- Live2D Library -->
 <script src="src/live2d/live2dcubismcore.min.js"></script>
 <script src="src/live2d/live2d.min.js"></script>
+<script src="src/shared.js"></script>
 
 <script src="src/pixiDisplay.js"></script>
 
-<div id="txtInfo" style="color: #ffffff; background-color: transparent"></div>
-
-<p>
+<p style="max-width: 800px">
   <button id="select">Select</button>
   <button id="btnPrev" class="active">Prev Model</button>
   <button id="btnNext" class="active">Next Model</button>
@@ -38,6 +34,12 @@
   <button id="btnPrevMotion">Prev Motion</button>
   <button id="btnNextMotion">Next Motion</button>
 </p>
+
+<div id="txtInfo" style="color: #070707; background-color: blanchedalmond"></div>
+
+<div style="overflow: scroll;">
+  <canvas id="canvas"></canvas>
+</div>
 </body>
 
 </html>

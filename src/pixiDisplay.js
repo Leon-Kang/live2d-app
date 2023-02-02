@@ -38,6 +38,8 @@ async function pixiViewer() {
     resizeModel(model);
     this.motions = model.motions;
     console.log(this.groups);
+
+    connectBtn();
 }
 
 function resizeModel(model) {
@@ -52,6 +54,23 @@ function resizeModel(model) {
         model.width = (modelWidth / modelHeight) * baseResolution;
         model.height = baseResolution;
     }
+}
+
+function connectBtn() {
+    const selectBtn = document.getElementById('select');
+    selectBtn.addEventListener('click', function () {
+        const dialog = require('electron').remote.dialog;
+        dialog.showOpenDialog({
+            properties: ['openFile', 'multiSelections'],
+            filters: [
+                { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
+                { name: 'Movies', extensions: ['mkv', 'avi', 'mp4'] },
+                { name: 'Custom File Type', extensions: ['as'] },
+                { name: 'All Files', extensions: ['*'] }
+            ]}).then(r => {
+            console.log(r);
+        })
+     })
 }
 
 function walkdir(dir, callback) {

@@ -8,6 +8,7 @@ function createWindow () {
     width: 1920,
     height: 1080,
     webPreferences: {
+      enableRemoteModule: true,
       nodeIntegration: true
     },
     title: 'live2d-app'
@@ -17,6 +18,7 @@ function createWindow () {
     width: 1920,
     height: 1080,
     webPreferences: {
+      enableRemoteModule: true,
       nodeIntegration: true
     },
     title: 'pixi-render'
@@ -47,6 +49,7 @@ app.on('new-window-for-tab', (event) => {
     width: 1920,
     height: 1080,
     webPreferences: {
+      enableRemoteModule: true,
       nodeIntegration: true
     }
   })

@@ -25,6 +25,19 @@ async function pixiViewer() {
 
     this.selectedPaths = ""
 
+    const canvas = document.getElementById('canvas');
+    this.app = new PIXI.Application({
+        view: canvas,
+        width: 2048,
+        height: 2048,
+        autoStart: true,
+        clearBeforeRender: true,
+        backgroundColor: 0xFFFFF,
+        resizeTo: window,
+        antialias: true,
+        backgroundAlpha: 0.75,
+    });
+
     await loadModel();
 
     connectBtn();
@@ -32,6 +45,11 @@ async function pixiViewer() {
 
 async function loadModel(modelPath) {
     let model;
+    // clean stage
+    const index = this.app.stage.children.indexOf(this.model);
+    if (index >= 0) {
+        await this.app.stage.removeChildAt(index);
+    }
     if (modelPath) {
         modelPath = 'file://' + modelPath;
         console.log("path: " + modelPath)
@@ -45,20 +63,9 @@ async function loadModel(modelPath) {
 }
 
 async function renderModel(model) {
-    const canvas = document.getElementById('canvas');
-    this.app = new PIXI.Application({
-        view: canvas,
-        width: 2048,
-        height: 2048,
-        autoStart: true,
-        clearBeforeRender: true,
-        backgroundColor: 0xFFFFF,
-        resizeTo: window,
-        antialias: true,
-        backgroundAlpha: 0.75,
-    });
     await this.app.stage.addChild(model);
-    // resizeModel(model);
+    this.model = model;
+
     const motionManager = model.internalModel.motionManager;
 
     model.position.set(32, 32);
@@ -80,20 +87,6 @@ async function renderModel(model) {
     console.log("motion group: " + motionGroups);
 }
 
-function resizeModel(model) {
-    const modelWidth = model.width;
-    const modelHeight = model.height;
-
-    if (modelHeight > modelWidth) {
-        // Portrait
-        model.width = baseResolution;
-        model.height = (modelHeight / modelWidth) * baseResolution;
-    } else {
-        model.width = (modelWidth / modelHeight) * baseResolution;
-        model.height = baseResolution;
-    }
-}
-
 function connectBtn() {
     addFilePicker('select', async function (paths) {
         this.selectedPaths = paths;
@@ -102,8 +95,26 @@ function connectBtn() {
     });
     const btnSave = document.getElementById("btnSave");
     btnSave.addEventListener("click", function (e) {
-        saveToPng(path.join(outputRoot, "image.png"), 'canvas');
+        // saveToPng(path.join(outputRoot, "image.png"), 'canvas');
+        pixiViewer.save();
     });
+}
+
+pixiViewer.save = function () {
+    this.app.pauseAnimations();
+    const canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext("2d");
+    const imageObj = new Image();
+
+    imageObj.onload = function() {
+        ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
+        const pngUrl = canvas.toDataURL("image/png");
+        console.log(pngUrl);
+        const data = pngUrl.replace(/^data:image\/\w+;base64,/, "");
+        console.log("data: 1111111 : " + data);
+        const buf = Buffer.from(data, "base64");
+        fs.writeFileSync(path.join(outputRoot, "image.png"), buf);
+    };
 }
 
 function loadPixiModel(paths) {

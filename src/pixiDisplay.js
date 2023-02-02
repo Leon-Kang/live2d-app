@@ -101,20 +101,13 @@ function connectBtn() {
 }
 
 pixiViewer.save = function () {
-    this.app.pauseAnimations();
     const canvas = document.getElementById('canvas');
-    let ctx = canvas.getContext("2d");
-    const imageObj = new Image();
 
-    imageObj.onload = function() {
-        ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
-        const pngUrl = canvas.toDataURL("image/png");
-        console.log(pngUrl);
-        const data = pngUrl.replace(/^data:image\/\w+;base64,/, "");
-        console.log("data: 1111111 : " + data);
-        const buf = Buffer.from(data, "base64");
-        fs.writeFileSync(path.join(outputRoot, "image.png"), buf);
-    };
+    const pngUrl = canvas.toDataURL("image/png");
+    console.log(pngUrl);
+    const data = pngUrl.replace(/^data:image\/\w+;base64,/, "");
+    const buf = Buffer.from(data, "base64");
+    fs.writeFileSync(path.join(outputRoot, "image.png"), buf);
 }
 
 function loadPixiModel(paths) {

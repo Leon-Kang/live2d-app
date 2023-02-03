@@ -31,6 +31,7 @@ async function pixiViewer() {
         width: 2048,
         height: 2048,
         autoStart: true,
+        preserveDrawingBuffer: true,
         clearBeforeRender: true,
         backgroundColor: 0xFFFFF,
         resizeTo: window,
@@ -101,13 +102,7 @@ function connectBtn() {
 }
 
 pixiViewer.save = function () {
-    const canvas = document.getElementById('canvas');
-
-    const pngUrl = canvas.toDataURL("image/png");
-    console.log(pngUrl);
-    const data = pngUrl.replace(/^data:image\/\w+;base64,/, "");
-    const buf = Buffer.from(data, "base64");
-    fs.writeFileSync(path.join(outputRoot, "image.png"), buf);
+    saveToPng(path.join(outputRoot, "image.png"), 'canvas');
 }
 
 function loadPixiModel(paths) {

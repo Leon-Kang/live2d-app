@@ -25,6 +25,8 @@ async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
 
     this.selectedPath = ""
+    this.outputPath = ""
+    this.modelName = ""
 
     const canvas = document.getElementById('canvas');
     this.app = new PIXI.Application({
@@ -42,6 +44,9 @@ async function pixiViewer() {
 
     await loadModel();
 
+    this.projMatrix = new L2DMatrix44();
+    this.projMatrix.multScale(1, canvas.width / canvas.height);
+
     connectBtn();
 }
 
@@ -58,6 +63,7 @@ async function loadModel(modelPath) {
         model = await Live2DModel.from(modelPath, {
             autoInteract: true,
         });
+        this.selectedPath = modelPath;
     } else {
         model = await loadPixiModel();
     }
@@ -93,29 +99,72 @@ async function renderModel(model) {
 }
 
 function connectBtn() {
-    addFilePicker('select', async function (path) {
+    addFilePicker('select', function (path) {
         this.selectedPath = path;
         console.log('selectedPath: ' + this.selectedPath);
-        await loadModel(path);
+        loadModel(path);
     });
     const btnSave = document.getElementById("btnSave");
     btnSave.addEventListener("click", function (e) {
         pixiViewer.save();
     });
+    const btnSaveLayer = document.getElementById("btnSaveLayer");
+    btnSaveLayer.addEventListener("click", function (e) {
+        pixiViewer.saveAsLayer();
+    });
 }
 
-pixiViewer.save = async function () {
-    const selectedPath = thisRef.selectedPath;
-    console.log("1111: " + selectedPath)
+pixiViewer.save = function () {
+    getOutputPath();
+    fs.mkdirSync(thisRef.outputPath, { recursive: true });
+    const path = require("path");
+    saveToPng(path.join(thisRef.outputPath, thisRef.modelName + ".png"), 'canvas');
+}
+
+pixiViewer.saveAsLayer = function () {
+    getOutputPath();
+    const path = require("path");
+    const layerPath = path.join(thisRef.outputPath, 'layer');
+    fs.mkdirSync(layerPath, { recursive: true });
+    const model = thisRef.model;
+    const elementList = model.getElementList();
+    const canvas = document.getElementById('canvas');
+
+    MatrixStack.reset();
+    MatrixStack.loadIdentity();
+    MatrixStack.multMatrix(thisRef.projMatrix.getArray());
+    MatrixStack.multMatrix(thisRef.viewMatrix.getArray());
+    MatrixStack.push();
+
+    elementList.forEach((item, index) => {
+        if (gl.COLOR_BUFFER_BIT < 128) {
+            return;
+        }
+        let element = item.element;
+        let partID = item.partID;
+        let order = ("000" + index).slice(-4);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        model.drawElement(gl, element);
+        // Separate directory for each partID
+        if (!fs.existsSync(path.join(dir, partID))) {
+            fs.mkdirSync(path.join(dir, partID));
+        }
+
+        let img = canvas.toDataURL();
+        let data = img.replace(/^data:image\/\w+;base64,/, "");
+        let buf = Buffer.from(data, "base64");
+        fs.writeFileSync(path.join(layerPath, partID, order + "_" + partID + ".png"), buf);
+    });
+
+    MatrixStack.pop();
+
+}
+
+function getOutputPath() {
+    const selectedPath = this.selectedPath;
     const name = selectedPath.substring(selectedPath.indexOf('/') + 1, selectedPath.lastIndexOf('/'));
-    console.log("1111: " + name)
-    const output = path.join(outputRoot, name)
-    fs.mkdirSync(output, { recursive: true });
-    await saveToPng(path.join(output, name + ".png"), 'canvas');
-}
-
-pixiViewer.saveAsLayer = function (dir = path.join(outputRoot, "layer")) {
-
+    thisRef.outputPath = path.join(outputRoot, name);
+    thisRef.modelName = name;
 }
 
 function loadPixiModel(paths) {
@@ -129,7 +178,7 @@ function loadPixiModel(paths) {
     console.log("pixi file path: " + filelist);
     const last = filelist[0];
     console.log(last);
-    this.selectedPath = last;
+    thisRef.selectedPath = last;
     return Live2DModel.from(last);
 }
 

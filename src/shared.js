@@ -8,7 +8,7 @@ function addFilePicker(buttonId, callback) {
         dialog.showOpenDialog({
             properties: ['openFile', 'multiSelections'],
             filters: [
-                { name: 'model', extensions: [ '*.model.json', '*.model3.json' ] },
+                { name: 'model', extensions: [ '*.model.json', '*.model3.json', '.model3.json' ] },
                 { name: 'All', extensions: [ '*' ] },
             ]}).then(r => {
                 let paths = r.filePaths;

@@ -6,6 +6,7 @@ const { InteractionManager } = require('@pixi/interaction');
 const { ShaderSystem, renderer } = require("@pixi/core")
 
 const { install } = require("@pixi/unsafe-eval");
+const { decycle, encycle } = require('json-cyclic');
 
 const datasetRoot = "dataset"; // Root of dataset directory
 const outputRoot = "output"; // Root of output directory
@@ -23,7 +24,7 @@ install({ ShaderSystem });
 async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
 
-    this.selectedPaths = ""
+    this.selectedPath = ""
 
     const canvas = document.getElementById('canvas');
     this.app = new PIXI.Application({
@@ -67,7 +68,10 @@ async function renderModel(model) {
     await this.app.stage.addChild(model);
     this.model = model;
 
+    // console.log('111111: ' + JSON.stringify(decycle(model)))
+
     const motionManager = model.internalModel.motionManager;
+    // console.log('111111: ' + JSON.stringify(decycle(motionManager)))
 
     model.position.set(32, 32);
 
@@ -89,20 +93,29 @@ async function renderModel(model) {
 }
 
 function connectBtn() {
-    addFilePicker('select', async function (paths) {
-        this.selectedPaths = paths;
-        console.log('selectedPath: ' + this.selectedPaths);
-        await loadModel(paths);
+    addFilePicker('select', async function (path) {
+        this.selectedPath = path;
+        console.log('selectedPath: ' + this.selectedPath);
+        await loadModel(path);
     });
     const btnSave = document.getElementById("btnSave");
     btnSave.addEventListener("click", function (e) {
-        // saveToPng(path.join(outputRoot, "image.png"), 'canvas');
         pixiViewer.save();
     });
 }
 
-pixiViewer.save = function () {
-    saveToPng(path.join(outputRoot, "image.png"), 'canvas');
+pixiViewer.save = async function () {
+    const selectedPath = thisRef.selectedPath;
+    console.log("1111: " + selectedPath)
+    const name = selectedPath.substring(selectedPath.indexOf('/') + 1, selectedPath.lastIndexOf('/'));
+    console.log("1111: " + name)
+    const output = path.join(outputRoot, name)
+    fs.mkdirSync(output, { recursive: true });
+    await saveToPng(path.join(output, name + ".png"), 'canvas');
+}
+
+pixiViewer.saveAsLayer = function (dir = path.join(outputRoot, "layer")) {
+
 }
 
 function loadPixiModel(paths) {
@@ -116,6 +129,7 @@ function loadPixiModel(paths) {
     console.log("pixi file path: " + filelist);
     const last = filelist[0];
     console.log(last);
+    this.selectedPath = last;
     return Live2DModel.from(last);
 }
 

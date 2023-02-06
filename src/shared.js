@@ -22,7 +22,6 @@ function saveToPng(filepath, canvasId) {
     const canvas = document.getElementById(canvasId);
     const img = canvas.toDataURL();
     const data = img.replace(/^data:image\/\w+;base64,/, "");
-    console.log("data: 1111111 : " + data);
     const buf = Buffer.from(data, "base64");
     fs.writeFileSync(filepath, buf);
 };

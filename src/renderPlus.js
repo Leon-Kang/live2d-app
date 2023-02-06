@@ -1,6 +1,4 @@
 const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
 const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
 
@@ -9,7 +7,7 @@ nativeTheme.themeSource = "dark";
 // Parameters
 const datasetRoot = "dataset"; // Root of dataset directory
 const outputRoot = "output"; // Root of output directory
-const blacklistPath = path.join(outputRoot, "blacklist.txt"); // Blacklist path
+const blacklistPath = require("path").join(outputRoot, "blacklist.txt"); // Blacklist path
 const baseResolution = 1024;
 const ignoreGeneratedJson = true; // Ignore the generated JSON file
 const ignoreOriginalJson = true; // Ignore the original JSON file
@@ -106,13 +104,9 @@ viewer.goto = function () {
     viewer.changeModel(0);
 };
 
-viewer.save = function (filepath = path.join(outputRoot, "image.png")) {
-    // Save canvas to png file
-    var img = canvas.toDataURL();
-    var data = img.replace(/^data:image\/\w+;base64,/, "");
-    var buf = Buffer.from(data, "base64");
-    fs.writeFileSync(filepath, buf);
-};
+viewer.save = function () {
+    saveToPng(path.join(outputRoot, "image.png"), 'glcanvas');
+}
 
 viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     // Create dir
@@ -681,19 +675,6 @@ function loadModelJson(mocPath) {
     return modelJson;
 }
 
-function walkdir(dir, callback) {
-    const files = fs.readdirSync(dir);
-    files.forEach((file) => {
-        var filepath = path.join(dir, file);
-        const stats = fs.statSync(filepath);
-        if (stats.isDirectory()) {
-            walkdir(filepath, callback);
-        } else if (stats.isFile()) {
-            callback(filepath);
-        }
-    });
-}
-
 /* ********** マウスイベント ********** */
 
 /*
@@ -888,28 +869,3 @@ function transformScreenY(deviceY) {
     return this.deviceToScreen.transformY(deviceY);
 }
 
-/*
- * WebGLのコンテキストを取得する
- */
-function getWebGLContext() {
-    var NAMES = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
-
-    for (var i = 0; i < NAMES.length; i++) {
-        try {
-            var ctx = this.canvas.getContext(NAMES[i], {
-                premultipliedAlpha: true,
-                preserveDrawingBuffer: true,
-            });
-            if (ctx) return ctx;
-        } catch (e) {}
-    }
-    return null;
-}
-
-/*
- * 画面エラーを出力
- */
-function l2dError(msg) {
-    if (!LAppDefine.DEBUG_LOG) return;
-    console.error(msg);
-}

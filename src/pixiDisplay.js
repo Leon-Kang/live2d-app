@@ -1,78 +1,127 @@
-const { Live2DModel, Cubism2ModelSettings } = require("pixi-live2d-display");
+const { Live2DModel } = require("pixi-live2d-display");
 const PIXI = require("pixi.js");
-const path = require("path");
-const fs = require("fs");
+
 const { Ticker, TickerPlugin } = require("@pixi/ticker")
 const { InteractionManager } = require('@pixi/interaction');
-const { ShaderSystem } = require("@pixi/core")
+const { ShaderSystem, renderer } = require("@pixi/core")
 
 const { install } = require("@pixi/unsafe-eval");
-const {Transform} = require("@pixi/math");
+const { decycle, encycle } = require('json-cyclic');
 
 const datasetRoot = "dataset"; // Root of dataset directory
 const outputRoot = "output"; // Root of output directory
-const blacklistPath = path.join(outputRoot, "blacklist.txt"); // Blacklist path
-const baseResolution = 1024;
+const baseResolution = 512;
 
 const thisRef = this;
 
 window.PIXI = PIXI;
+PIXI.extensions.add(InteractionManager);
+PIXI.extensions.add(TickerPlugin);
+Live2DModel.registerTicker(Ticker);
+
 install({ ShaderSystem });
 
 async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
+
+    this.selectedPath = ""
+
+    const canvas = document.getElementById('canvas');
     this.app = new PIXI.Application({
-        view: document.getElementById('canvas'),
-        width: 1024,
-        height: 1024,
+        view: canvas,
+        width: 2048,
+        height: 2048,
         autoStart: true,
+        preserveDrawingBuffer: true,
+        clearBeforeRender: true,
+        backgroundColor: 0xFFFFF,
+        resizeTo: window,
+        antialias: true,
+        backgroundAlpha: 0.75,
     });
 
-    PIXI.extensions.add(InteractionManager);
-    Live2DModel.registerTicker(Ticker);
-    this.app.renderer.backgroundColor = 0xFFFFF
+    await loadModel();
 
-    const model = await loadPixiModel();
-    this.model = model;
-    this.app.stage.addChild(model);
-    console.log(model.motion)
-
-    resizeModel(model)
-
-    this.motions = model.motions;
-    console.log(this.groups)
+    connectBtn();
 }
 
-function resizeModel(model) {
-    const modelWidth = model.width;
-    const modelHeight = model.height;
-
-    if (modelHeight > modelWidth) {
-        // Portrait
-        model.width = baseResolution;
-        model.height = (modelHeight / modelWidth) * baseResolution;
-    } else {
-        model.width = (modelWidth / modelHeight) * baseResolution;
-        model.height = baseResolution;
+async function loadModel(modelPath) {
+    let model;
+    // clean stage
+    const index = this.app.stage.children.indexOf(this.model);
+    if (index >= 0) {
+        await this.app.stage.removeChildAt(index);
     }
+    if (modelPath) {
+        modelPath = 'file://' + modelPath;
+        console.log("path: " + modelPath)
+        model = await Live2DModel.from(modelPath, {
+            autoInteract: true,
+        });
+    } else {
+        model = await loadPixiModel();
+    }
+    await renderModel(model);
 }
 
-function walkdir(dir, callback) {
-    const files = fs.readdirSync(dir);
-    files.forEach((file) => {
-        const filepath = path.join(dir, file);
-        const stats = fs.statSync(filepath);
-        if (stats.isDirectory()) {
-            walkdir(filepath, callback);
-        } else if (stats.isFile()) {
-            callback(filepath);
-        }
+async function renderModel(model) {
+    await this.app.stage.addChild(model);
+    this.model = model;
+
+    // console.log('111111: ' + JSON.stringify(decycle(model)))
+
+    const motionManager = model.internalModel.motionManager;
+    // console.log('111111: ' + JSON.stringify(decycle(motionManager)))
+
+    model.position.set(32, 32);
+
+    console.log(this.app, this.app.renderer)
+    fit(this.app.renderer.width, this.app.renderer.height, model);
+
+    const motionGroups = []
+    const definitions = motionManager.definitions;
+    console.log("motion definitions: " + definitions);
+    for (const [group, motions] of Object.entries(definitions)) {
+        motionGroups.push({
+            name: group,
+            motions: motions?.map((motion, index) => ({
+                file: motion.file || motion.File || '',
+            })) || [],
+        });
+    }
+    console.log("motion group: " + motionGroups);
+}
+
+function connectBtn() {
+    addFilePicker('select', async function (path) {
+        this.selectedPath = path;
+        console.log('selectedPath: ' + this.selectedPath);
+        await loadModel(path);
+    });
+    const btnSave = document.getElementById("btnSave");
+    btnSave.addEventListener("click", function (e) {
+        pixiViewer.save();
     });
 }
 
-function loadPixiModel() {
+pixiViewer.save = async function () {
+    const selectedPath = thisRef.selectedPath;
+    console.log("1111: " + selectedPath)
+    const name = selectedPath.substring(selectedPath.indexOf('/') + 1, selectedPath.lastIndexOf('/'));
+    console.log("1111: " + name)
+    const output = path.join(outputRoot, name)
+    fs.mkdirSync(output, { recursive: true });
+    await saveToPng(path.join(output, name + ".png"), 'canvas');
+}
+
+pixiViewer.saveAsLayer = function (dir = path.join(outputRoot, "layer")) {
+
+}
+
+function loadPixiModel(paths) {
     let filelist = [];
-    walkdir("dataset", function (filepath) {
+
+    walkdir(paths || "dataset", function (filepath) {
         if (filepath.endsWith(".model.json") || filepath.endsWith(".model3.json")) {
             filelist.push(filepath);
         }
@@ -80,20 +129,24 @@ function loadPixiModel() {
     console.log("pixi file path: " + filelist);
     const last = filelist[0];
     console.log(last);
+    this.selectedPath = last;
     return Live2DModel.from(last);
 }
 
-function getWebGLContext() {
-    var NAMES = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+function fit(width, height, model) {
+    if (model) {
+        let scales = Math.min(width / model.width, height / model.height);
 
-    for (var i = 0; i < NAMES.length; i++) {
-        try {
-            var ctx = this.canvas.getContext(NAMES[i], {
-                premultipliedAlpha: true,
-                preserveDrawingBuffer: true,
-            });
-            if (ctx) return ctx;
-        } catch (e) {}
+        scales = Math.round(scales * 10) / 10;
+        scale(scales, scales, model);
     }
-    return null;
+}
+
+function scale(scaleX, scaleY, model) {
+    this._scaleX = scaleX ?? this._scaleX;
+    this._scaleY = scaleY ?? this._scaleY;
+
+    if (model) {
+        model.scale.set(this._scaleX, this._scaleY);
+    }
 }

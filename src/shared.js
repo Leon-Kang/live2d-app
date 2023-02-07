@@ -8,11 +8,11 @@ function addFilePicker(buttonId, callback) {
         dialog.showOpenDialog({
             properties: ['openFile', 'multiSelections'],
             filters: [
-                { name: 'model', extensions: [ '*.model.json', '*.model3.json' ] },
+                { name: 'model', extensions: [ '*.model.json', '*.model3.json', '.model3.json' ] },
                 { name: 'All', extensions: [ '*' ] },
             ]}).then(r => {
                 let paths = r.filePaths;
-                callback(paths);
+                paths.length > 0 && callback(paths);
             })
     })
 }
@@ -21,9 +21,7 @@ function saveToPng(filepath, canvasId) {
     // Save canvas to png file
     const canvas = document.getElementById(canvasId);
     const img = canvas.toDataURL();
-    console.log("image: 1111111 : " + img);
     const data = img.replace(/^data:image\/\w+;base64,/, "");
-    console.log("data: 1111111 : " + data);
     const buf = Buffer.from(data, "base64");
     fs.writeFileSync(filepath, buf);
 };

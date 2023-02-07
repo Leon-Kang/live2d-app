@@ -104,8 +104,12 @@ viewer.goto = function () {
     viewer.changeModel(0);
 };
 
-viewer.save = function () {
-    saveToPng(path.join(outputRoot, "image.png"), 'glcanvas');
+viewer.save = function (filepath = path.join(outputRoot, "image.png")) {
+    // Save canvas to png file
+    var img = canvas.toDataURL();
+    var data = img.replace(/^data:image\/\w+;base64,/, "");
+    var buf = Buffer.from(data, "base64");
+    fs.writeFileSync(filepath, buf);
 }
 
 viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {

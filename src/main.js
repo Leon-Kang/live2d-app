@@ -36,8 +36,8 @@ function createWindow () {
   });
 
   view.webContents.openDevTools()
-  win.webContents.on('devtools-opened', () => {
-    win.webContents.focus();
+  view.webContents.on('devtools-opened', () => {
+    view.webContents.focus();
   });
 }
 

@@ -23,7 +23,7 @@ install({ ShaderSystem });
 async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
 
-    this.selectedPaths = ""
+    this.selectedPath = ""
 
     const canvas = document.getElementById('canvas');
     this.app = new PIXI.Application({
@@ -45,6 +45,7 @@ async function pixiViewer() {
 
 async function loadModel(modelPath) {
     let model;
+    this.selectedPath = modelPath;
     // clean stage
     const index = this.app.stage.children.indexOf(this.model);
     if (index >= 0) {
@@ -89,8 +90,6 @@ async function renderModel(model) {
 
 function connectBtn() {
     addFilePicker('select', async function (paths) {
-        this.selectedPaths = paths;
-        console.log('selectedPath: ' + this.selectedPaths);
         await loadModel(paths);
     });
     const btnSave = document.getElementById("btnSave");
@@ -98,6 +97,8 @@ function connectBtn() {
         // saveToPng(path.join(outputRoot, "image.png"), 'canvas');
         pixiViewer.save();
     });
+    const textInfo = document.getElementById("txtInfo");
+    textInfo.textContent = this.selectedPath
 }
 
 pixiViewer.save = function () {
@@ -117,7 +118,7 @@ pixiViewer.save = function () {
     };
 }
 
-function loadPixiModel(paths) {
+async function loadPixiModel(paths) {
     let filelist = [];
 
     walkdir(paths || "dataset", function (filepath) {
@@ -128,7 +129,8 @@ function loadPixiModel(paths) {
     console.log("pixi file path: " + filelist);
     const last = filelist[0];
     console.log(last);
-    return Live2DModel.from(last);
+    this.selectedPath = last;
+    return await Live2DModel.from(last);
 }
 
 function fit(width, height, model) {
@@ -146,5 +148,8 @@ function scale(scaleX, scaleY, model) {
 
     if (model) {
         model.scale.set(this._scaleX, this._scaleY);
+        const canvas = document.getElementById('canvas');
+        canvas.height = model.height + 64
+        canvas.width = model.width + 64
     }
 }

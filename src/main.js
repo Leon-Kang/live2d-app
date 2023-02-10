@@ -9,7 +9,8 @@ function createWindow () {
     height: 1080,
     webPreferences: {
       enableRemoteModule: true,
-      nodeIntegration: true
+      nodeIntegration: true,
+      contextIsolation: true,
     },
     title: 'live2d-app'
   })
@@ -19,7 +20,8 @@ function createWindow () {
     height: 1080,
     webPreferences: {
       enableRemoteModule: true,
-      nodeIntegration: true
+      nodeIntegration: true,
+      contextIsolation: true,
     },
     title: 'pixi-render'
   })

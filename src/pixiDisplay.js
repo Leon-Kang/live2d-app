@@ -74,7 +74,7 @@ async function renderModel(model) {
     thisRef.model = model;
     await this.app.stage.addChild(model);
 
-    console.log('111111: ' + JSON.stringify(decycle(model)))
+    // console.log('111111: ' + JSON.stringify(decycle(model)))
 
     const motionManager = model.internalModel.motionManager;
     const settings = motionManager.settings;
@@ -179,7 +179,7 @@ function loadPixiModel(paths) {
     let filelist = [];
 
     walkdir(paths || "dataset", function (filepath) {
-        if (filepath.endsWith(".model.json") || filepath.endsWith(".model3.json")) {
+        if (filepath.endsWith(".model3.json")) {
             filelist.push(filepath);
         }
     });

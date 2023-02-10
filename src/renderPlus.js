@@ -136,9 +136,6 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     viewer.save(path.join(dir, "all.png"));
 
     elementList.forEach((item, index) => {
-        if (gl.COLOR_BUFFER_BIT < 128) {
-            return;
-        }
         var element = item.element;
         var partID = item.partID;
         var order = ("000" + index).slice(-4);
@@ -160,6 +157,77 @@ viewer.togglePlayPause = function() {
     isPlay = !isPlay;
     btnPlayPause.textContent = isPlay ? "Pause" : "Play";
 };
+
+viewer.savePart = function () {
+    // Print model stat
+    var live2DModel = live2DMgr.getModel(0).live2DModel;
+    var modelImpl = live2DModel.getModelImpl();
+
+    console.log("[getPartIDs]", getPartIDs(modelImpl));
+    console.log("[getParamIDs]", getParamIDs(modelImpl));
+
+    parts = modelImpl._$F2;
+    ids = getPartIDs(modelImpl);
+    partsCount = parts.length;
+    parts.forEach((element) => {
+        console.log(element.getDrawData());
+    });
+
+    const dir = path.join(outputRoot, "parts");
+    // Create dir
+    fs.mkdirSync(dir, { recursive: true });
+
+    // Keep previous playing state, and set to pause to stop calling draw()
+    const prevIsPlay = isPlay;
+    isPlay = false;
+
+    const model = live2DMgr.getModel(0);
+    model.update(frameCount);
+    var elementList = model.live2DModel.getElementList();
+
+    // Save images for each element
+    MatrixStack.reset();
+    MatrixStack.loadIdentity();
+    MatrixStack.multMatrix(projMatrix.getArray());
+    MatrixStack.multMatrix(viewMatrix.getArray());
+    MatrixStack.push();
+
+    let tempId = "";
+    let tempOrder = 0;
+    elementList.forEach((item, index) => {
+        const element = item.element;
+        if (element.length === 0) {
+            return;
+        }
+        const partID = item.partID;
+        if (tempId.length === 0) {
+            tempId = partID;
+        }
+        tempOrder += 1;
+        if (tempId !== partID) {
+            // const path = require("path");
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir);
+            }
+            viewer.save(path.join(dir, tempId + '_' + tempOrder.toString() + ".png"));
+            tempId = partID;
+            tempOrder = 0;
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        model.drawElement(gl, element);
+
+
+
+
+        // Separate directory for each partID
+
+    });
+
+    MatrixStack.pop();
+
+    isPlay = prevIsPlay;
+
+}
 
 viewer.secret = function() {
     // Print model stat
@@ -336,6 +404,11 @@ function connectBtn() {
     btnSaveLayer = document.getElementById("btnSaveLayer");
     btnSaveLayer.addEventListener("click", function (e) {
         viewer.saveLayer();
+    });
+
+    btnSavePart = document.getElementById("btnSavePart");
+    btnSavePart.addEventListener("click", function (e) {
+        viewer.savePart();
     });
 
     btnSecret = document.getElementById("btnSecret");
@@ -618,15 +691,18 @@ function loadModelJson(mocPath) {
             filepath.endsWith("physics.json")
         ) {
             physics = filepath.replace(pardir + "/", "");
+            console.log('physics: ' + physics);
         }
         if (filepath.endsWith("pose.json")) {
             pose = filepath.replace(pardir + "/", "");
         }
         if (filepath.endsWith(".mtn")) {
             motions.push(filepath.replace(pardir + "/", ""));
+            console.log('motions: ' + motions);
         }
         if (filepath.endsWith(".exp.json")) {
             expressions.push(filepath.replace(pardir + "/", ""));
+            console.log('expressions: ' + expressions);
         }
         if (filepath.endsWith("generated.model.json")) {
             if (!ignoreGeneratedJson) {

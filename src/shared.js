@@ -47,7 +47,7 @@ function l2dError(msg) {
 function walkdir(dir, callback) {
     const files = fs.readdirSync(dir);
     files.forEach((file) => {
-        var filepath = path.join(dir, file);
+        let filepath = path.join(dir, file);
         const stats = fs.statSync(filepath);
         if (stats.isDirectory()) {
             walkdir(filepath, callback);

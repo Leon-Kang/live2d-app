@@ -6,14 +6,12 @@ function addFilePicker(buttonId, callback) {
     selectBtn.addEventListener('click', function () {
         const dialog = require('electron').remote.dialog;
         dialog.showOpenDialog({
-            properties: ['openFile', 'multiSelections'],
-            filters: [
-                { name: 'model', extensions: [ '*.model.json', '*.model3.json', '.model3.json' ] },
-                { name: 'All', extensions: [ '*' ] },
-            ]}).then(r => {
-                let paths = r.filePaths;
-                paths.length > 0 && callback(paths);
-            })
+            properties: ['openDirectory'],
+            filters: []
+        }).then(r => {
+            let paths = r.filePaths;
+            paths.length > 0 && callback(paths);
+        })
     })
 }
 

@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
+const {Live2DModel} = require("pixi-live2d-display");
 
 nativeTheme.themeSource = "dark";
 
@@ -14,10 +15,10 @@ const ignoreOriginalJson = true; // Ignore the original JSON file
 const batchOperationMinDelay = 1000;
 const batchOperationDelayRange = 1000;
 
-var thisRef = this;
+let thisRef = this;
 let modelJsonIds = {};
 
-var getPartIDs = function (modelImpl) {
+let getPartIDs = function (modelImpl) {
     let partIDs = [];
     partsDataList = modelImpl._$Xr();
     partsDataList.forEach((element) => {
@@ -49,7 +50,7 @@ function viewer() {
     this.isDrawStart = false;
 
     this.gl = null;
-    this.canvas = null;
+    this.canvas = document.getElementById('glcanvas');
 
     this.dragMgr = null; /*new L2DTargetPoint();*/ // ドラッグによるアニメーションの管理
     this.viewMatrix = null; /*new L2DViewMatrix();*/
@@ -70,7 +71,7 @@ function viewer() {
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
-        var keyCode = e.keyCode;
+        let keyCode = e.keyCode;
         if (keyCode === 90) {
             // z key
             viewer.changeModel(-1);
@@ -106,9 +107,10 @@ viewer.goto = function () {
 
 viewer.save = function (filepath = path.join(outputRoot, "image.png")) {
     // Save canvas to png file
-    var img = canvas.toDataURL();
-    var data = img.replace(/^data:image\/\w+;base64,/, "");
-    var buf = Buffer.from(data, "base64");
+    const canvas = this.canvas;
+    let img = canvas.toDataURL();
+    let data = img.replace(/^data:image\/\w+;base64,/, "");
+    let buf = Buffer.from(data, "base64");
     fs.writeFileSync(filepath, buf);
 }
 
@@ -117,13 +119,13 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     fs.mkdirSync(dir, { recursive: true });
 
     // Keep previous playing state, and set to pause to stop calling draw()
-    var prevIsPlay = isPlay;
+    let prevIsPlay = isPlay;
     isPlay = false;
 
     // Remember to update the model before calling getElementList()
-    var model = live2DMgr.getModel(0);
+    let model = live2DMgr.getModel(0);
     model.update(frameCount);
-    var elementList = model.live2DModel.getElementList();
+    let elementList = model.live2DModel.getElementList();
 
     // Save images for each element
     MatrixStack.reset();
@@ -136,9 +138,9 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     viewer.save(path.join(dir, "all.png"));
 
     elementList.forEach((item, index) => {
-        var element = item.element;
-        var partID = item.partID;
-        var order = ("000" + index).slice(-4);
+        let element = item.element;
+        let partID = item.partID;
+        let order = ("000" + index).slice(-4);
         gl.clear(gl.COLOR_BUFFER_BIT);
         model.drawElement(gl, element);
         // Separate directory for each partID
@@ -160,8 +162,8 @@ viewer.togglePlayPause = function() {
 
 viewer.savePart = function () {
     // Print model stat
-    var live2DModel = live2DMgr.getModel(0).live2DModel;
-    var modelImpl = live2DModel.getModelImpl();
+    let live2DModel = live2DMgr.getModel(0).live2DModel;
+    let modelImpl = live2DModel.getModelImpl();
 
     console.log("[getPartIDs]", getPartIDs(modelImpl));
     console.log("[getParamIDs]", getParamIDs(modelImpl));
@@ -183,7 +185,7 @@ viewer.savePart = function () {
 
     const model = live2DMgr.getModel(0);
     model.update(frameCount);
-    var elementList = model.live2DModel.getElementList();
+    let elementList = model.live2DModel.getElementList();
 
     // Save images for each element
     MatrixStack.reset();
@@ -194,6 +196,7 @@ viewer.savePart = function () {
 
     let tempId = "";
     let tempOrder = 0;
+    gl.clear(gl.COLOR_BUFFER_BIT);
     elementList.forEach((item, index) => {
         const element = item.element;
         if (element.length === 0) {
@@ -209,15 +212,13 @@ viewer.savePart = function () {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir);
             }
-            viewer.save(path.join(dir, tempId + '_' + tempOrder.toString() + ".png"));
+            const fileName = `${index.toString()}-${tempId}-sub${tempOrder.toString()}.png`;
+            viewer.save(path.join(dir, fileName));
             tempId = partID;
             tempOrder = 0;
             gl.clear(gl.COLOR_BUFFER_BIT);
         }
         model.drawElement(gl, element);
-
-
-
 
         // Separate directory for each partID
 
@@ -231,15 +232,15 @@ viewer.savePart = function () {
 
 viewer.secret = function() {
     // Print model stat
-    var live2DModel = live2DMgr.getModel(0).live2DModel;
-    var modelImpl = live2DModel.getModelImpl();
+    let live2DModel = live2DMgr.getModel(0).live2DModel;
+    let modelImpl = live2DModel.getModelImpl();
 
     console.log("[getPartIDs]", getPartIDs(modelImpl));
     console.log("[getParamIDs]", getParamIDs(modelImpl));
 
     parts = modelImpl._$F2;
     partsCount = parts.length;
-    var elementCount = 0;
+    let elementCount = 0;
     parts.forEach((element) => {
         console.log(element.getDrawData());
         elementCount += element.getDrawData().length;
@@ -250,13 +251,13 @@ viewer.secret = function() {
 
 // TODO
 viewer.batch = function() {
-    var count = live2DMgr.getCount();
+    let count = live2DMgr.getCount();
     op = function () {
         if (count < live2DMgr.modelJsonList.length) {
-            var curModelPath = live2DMgr.modelJsonList[count];
-            var id = modelJsonIds[curModelPath];
-            var curMotion = live2DMgr.currentIdleMotion();
-            var progress =
+            let curModelPath = live2DMgr.modelJsonList[count];
+            let id = modelJsonIds[curModelPath];
+            let curMotion = live2DMgr.currentIdleMotion();
+            let progress =
                 "[" +
                 (count + 1) +
                 "/" +
@@ -298,7 +299,7 @@ viewer.batch = function() {
 };
 
 viewer.resize = function() {
-    const baseHeight = 512;
+    const canvas = this.canvas;
 
     live2DModel = live2DMgr.getModel(0).live2DModel;
     if (live2DModel == null) return;
@@ -313,9 +314,6 @@ viewer.resize = function() {
         canvas.width = (modelWidth / modelHeight) * baseResolution;
         canvas.height = baseResolution;
     }
-
-    // canvas.width = live2DModel.getCanvasWidth() / live2DModel.getCanvasHeight() * baseHeight;
-    // canvas.height = baseHeight;
 
     // ビュー行列
     const ratio = canvas.height / canvas.width;
@@ -353,7 +351,8 @@ viewer.resize = function() {
 
 viewer.initL2dCanvas = function(canvasId) {
     // canvasオブジェクトを取得
-    canvas = document.getElementById(canvasId);
+    this.canvas = document.getElementById(canvasId);
+    const canvas = this.canvas;
 
     // イベントの登録
     if (canvas.addEventListener) {
@@ -376,8 +375,14 @@ viewer.initL2dCanvas = function(canvasId) {
 
 function connectBtn() {
     // Initialize UI components
-    btnPrev = document.getElementById("btnPrev");
-    btnNext = document.getElementById("btnNext");
+    addFilePicker('select', function (path) {
+        this.selectedPath = path;
+        console.log('selectedPath: ' + this.selectedPath);
+        const root = getModelPath(path);
+        loadModels(root);
+    });
+    let btnPrev = document.getElementById("btnPrev");
+    let btnNext = document.getElementById("btnNext");
     btnPrev.addEventListener("click", function (e) {
         viewer.changeModel(-1);
     });
@@ -385,68 +390,79 @@ function connectBtn() {
         viewer.changeModel(1);
     });
 
-    btnGoto = document.getElementById("btnGoto");
+    let btnGoto = document.getElementById("btnGoto");
     btnGoto.addEventListener("click", function (e) {
         viewer.goto();
     });
 
-    btnPlayPause = document.getElementById("btnPlayPause");
+    let btnPlayPause = document.getElementById("btnPlayPause");
     btnPlayPause.addEventListener("click", function (e) {
         viewer.togglePlayPause();
     });
     btnPlayPause.textContent = isPlay ? "Pause" : "Play";
 
-    btnSave = document.getElementById("btnSave");
+    let btnSave = document.getElementById("btnSave");
     btnSave.addEventListener("click", function (e) {
         viewer.save();
     });
 
-    btnSaveLayer = document.getElementById("btnSaveLayer");
+    let btnSaveLayer = document.getElementById("btnSaveLayer");
     btnSaveLayer.addEventListener("click", function (e) {
         viewer.saveLayer();
     });
 
-    btnSavePart = document.getElementById("btnSavePart");
+    let btnSavePart = document.getElementById("btnSavePart");
     btnSavePart.addEventListener("click", function (e) {
         viewer.savePart();
     });
 
-    btnSecret = document.getElementById("btnSecret");
+    let btnSecret = document.getElementById("btnSecret");
     btnSecret.addEventListener("click", function (e) {
         viewer.secret();
     });
 
-    btnBatch = document.getElementById("btnBatch");
+    let btnBatch = document.getElementById("btnBatch");
     btnBatch.addEventListener("click", function (e) {
         viewer.batch();
     });
 
-    btnResize = document.getElementById("btnResize");
+    let btnResize = document.getElementById("btnResize");
     btnResize.addEventListener("click", function (e) {
         viewer.resize();
     });
 
-    btnLookRandom = document.getElementById("btnLookRandom");
+    let btnLookRandom = document.getElementById("btnLookRandom");
     btnLookRandom.addEventListener("click", function (e) {
-        isLookRandom = !isLookRandom;
+        this.isLookRandom = !this.isLookRandom;
     });
 
-    btnPrevMotion = document.getElementById("btnPrevMotion");
+    let btnPrevMotion = document.getElementById("btnPrevMotion");
     btnPrevMotion.addEventListener("click", function (e) {
         live2DMgr.prevIdleMotion();
     });
-    btnNextMotion = document.getElementById("btnNextMotion");
+    let btnNextMotion = document.getElementById("btnNextMotion");
     btnNextMotion.addEventListener("click", function (e) {
         live2DMgr.nextIdleMotion();
     });
 
 }
 
-async function loadModels() {
+async function getModelPath(modelPath) {
+    this.selectedPath = modelPath;
+
+    if (modelPath) {
+        modelPath = 'file://' + modelPath;
+        console.log("path: " + modelPath)
+        this.selectedPath = modelPath;
+    }
+
+    return this.selectedPath;
+}
+
+async function loadModels(path) {
     // Load all models
     let filelist = [];
-    walkdir(datasetRoot, function (filepath) {
-        // todo: filepath.endsWith(".moc3") ||
+    walkdir(path || datasetRoot, function (filepath) {
         if (filepath.endsWith(".moc")) {
             filelist.push(filepath);
         }
@@ -459,6 +475,7 @@ viewer.init = function() {
     connectBtn();
     loadModels();
 
+    const canvas = this.canvas;
     // 3Dバッファの初期化
     const width = canvas.width;
     const height = canvas.height;
@@ -570,7 +587,7 @@ viewer.draw = function () {
 
             if (!isModelShown && i == live2DMgr.numModels() - 1) {
                 isModelShown = !isModelShown;
-                var btnPrev = document.getElementById("btnPrev");
+                let btnPrev = document.getElementById("btnPrev");
                 btnPrev.removeAttribute("disabled");
                 btnPrev.setAttribute("class", "active");
 
@@ -589,11 +606,11 @@ viewer.draw = function () {
 };
 
 viewer.changeModel = function (inc = 1) {
-    btnPrev = document.getElementById("btnPrev");
+    let btnPrev = document.getElementById("btnPrev");
     btnPrev.setAttribute("disabled", "disabled");
     btnPrev.setAttribute("class", "inactive");
 
-    btnNext = document.getElementById("btnNext");
+    let btnNext = document.getElementById("btnNext");
     btnNext.setAttribute("disabled", "disabled");
     btnNext.setAttribute("class", "inactive");
 

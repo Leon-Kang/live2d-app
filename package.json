@@ -27,7 +27,6 @@
     "@pixi/utils": "^6.5.9",
     "flatted": "^3.2.7",
     "json-cyclic": "^1.0.2",
-    "package.json": "^2.0.1",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^6.5.9"
   },

@@ -1,6 +1,8 @@
 const crypto = require("crypto");
 const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
+const {Live2DModel} = require("pixi-live2d-display");
+const constants = require("constants");
 
 nativeTheme.themeSource = "dark";
 
@@ -14,12 +16,12 @@ const ignoreOriginalJson = true; // Ignore the original JSON file
 const batchOperationMinDelay = 1000;
 const batchOperationDelayRange = 1000;
 
-var thisRef = this;
+let thisRef = this;
 let modelJsonIds = {};
 
-var getPartIDs = function (modelImpl) {
+let getPartIDs = function (modelImpl) {
     let partIDs = [];
-    partsDataList = modelImpl._$Xr();
+    const partsDataList = modelImpl._$Xr();
     partsDataList.forEach((element) => {
         partIDs.push(element._$NL.id);
     });
@@ -28,7 +30,7 @@ var getPartIDs = function (modelImpl) {
 
 const getParamIDs = function (modelImpl) {
     let paramIDs = [];
-    paramDefSet = modelImpl._$E2()._$4S;
+    const paramDefSet = modelImpl._$E2()._$4S;
     paramDefSet.forEach((element) => {
         paramIDs.push(element._$wL.id);
     });
@@ -49,7 +51,7 @@ function viewer() {
     this.isDrawStart = false;
 
     this.gl = null;
-    this.canvas = null;
+    this.canvas = document.getElementById('glcanvas');
 
     this.dragMgr = null; /*new L2DTargetPoint();*/ // ドラッグによるアニメーションの管理
     this.viewMatrix = null; /*new L2DViewMatrix();*/
@@ -68,9 +70,13 @@ function viewer() {
     this.isLookRandom = false;
     this.frameCount = 0;
 
+    this.selectedPath = datasetRoot;
+    this.outputPath = outputRoot;
+    this.modelName = "";
+
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
-        var keyCode = e.keyCode;
+        let keyCode = e.keyCode;
         if (keyCode === 90) {
             // z key
             viewer.changeModel(-1);
@@ -104,22 +110,36 @@ viewer.goto = function () {
     viewer.changeModel(0);
 };
 
-viewer.save = function () {
-    saveToPng(path.join(outputRoot, "image.png"), 'glcanvas');
+viewer.save = function (filepath) {
+    // Save canvas to png file
+    const paths = path.dirname(this.selectedPath);
+    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    const dir = filepath || path.join(thisRef.outputPath, `${thisRef.modelName}.png`);
+
+    const canvas = this.canvas;
+    let img = canvas.toDataURL();
+    let data = img.replace(/^data:image\/\w+;base64,/, "");
+    let buf = Buffer.from(data, "base64");
+    fs.mkdirSync(thisRef.outputPath, { recursive: true });
+    fs.writeFileSync(dir, buf);
+    console.log('save image success: path - ' + dir);
 }
 
-viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
+viewer.saveLayer = function(dirpath) {
     // Create dir
+    const paths = path.dirname(this.selectedPath);
+    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    const dir = dirpath || path.join(thisRef.outputPath, thisRef.modelName, 'layer');
     fs.mkdirSync(dir, { recursive: true });
 
     // Keep previous playing state, and set to pause to stop calling draw()
-    var prevIsPlay = isPlay;
+    let prevIsPlay = isPlay;
     isPlay = false;
 
     // Remember to update the model before calling getElementList()
-    var model = live2DMgr.getModel(0);
+    let model = live2DMgr.getModel(0);
     model.update(frameCount);
-    var elementList = model.live2DModel.getElementList();
+    let elementList = model.live2DModel.getElementList();
 
     // Save images for each element
     MatrixStack.reset();
@@ -132,12 +152,9 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     viewer.save(path.join(dir, "all.png"));
 
     elementList.forEach((item, index) => {
-        if (gl.COLOR_BUFFER_BIT < 128) {
-            return;
-        }
-        var element = item.element;
-        var partID = item.partID;
-        var order = ("000" + index).slice(-4);
+        let element = item.element;
+        let partID = item.partID;
+        let order = ("000" + index).slice(-4);
         gl.clear(gl.COLOR_BUFFER_BIT);
         model.drawElement(gl, element);
         // Separate directory for each partID
@@ -150,6 +167,7 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     MatrixStack.pop();
 
     isPlay = prevIsPlay;
+    console.log('save layers success: path - ' + thisRef.outputPath);
 };
 
 viewer.togglePlayPause = function() {
@@ -157,17 +175,97 @@ viewer.togglePlayPause = function() {
     btnPlayPause.textContent = isPlay ? "Pause" : "Play";
 };
 
-viewer.secret = function() {
+viewer.savePart = function () {
     // Print model stat
-    var live2DModel = live2DMgr.getModel(0).live2DModel;
-    var modelImpl = live2DModel.getModelImpl();
+    let live2DModel = live2DMgr.getModel(0).live2DModel;
+    let modelImpl = live2DModel.getModelImpl();
 
     console.log("[getPartIDs]", getPartIDs(modelImpl));
     console.log("[getParamIDs]", getParamIDs(modelImpl));
 
     parts = modelImpl._$F2;
+    ids = getPartIDs(modelImpl);
     partsCount = parts.length;
-    var elementCount = 0;
+    parts.forEach((element) => {
+        console.log(element.getDrawData());
+    });
+
+    const paths = path.dirname(this.selectedPath);
+    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    const dir = path.join(thisRef.outputPath, thisRef.modelName, 'parts');
+    // Create dir
+    fs.mkdirSync(dir, { recursive: true });
+
+    // Keep previous playing state, and set to pause to stop calling draw()
+    const prevIsPlay = isPlay;
+    isPlay = false;
+
+    const model = live2DMgr.getModel(0);
+    model.update(frameCount);
+    let elementList = model.live2DModel.getElementList();
+
+    // Save images for each element
+    MatrixStack.reset();
+    MatrixStack.loadIdentity();
+    MatrixStack.multMatrix(projMatrix.getArray());
+    MatrixStack.multMatrix(viewMatrix.getArray());
+    MatrixStack.push();
+
+    let tempId = "";
+    let tempOrder = 0;
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    elementList.forEach((item, index) => {
+        const element = item.element;
+        if (element.length === 0) {
+            return;
+        }
+        const partID = item.partID;
+        if (tempId.length === 0) {
+            tempId = partID;
+        }
+        tempOrder += 1;
+        if (tempId !== partID) {
+            // const path = require("path");
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir);
+            }
+            const fileName = `${index.toString()}-${tempId}-sub${tempOrder.toString()}.png`;
+            viewer.save(path.join(dir, fileName));
+            tempId = partID;
+            tempOrder = 0;
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        model.drawElement(gl, element);
+
+        // Separate directory for each partID
+
+    });
+
+    MatrixStack.pop();
+
+    isPlay = prevIsPlay;
+    console.log('save parts success: path - ' + thisRef.outputPath);
+}
+
+viewer.secret = function() {
+    // Print model stat
+    let live2DModel = live2DMgr.getModel(0).live2DModel;
+    let modelImpl = live2DModel.getModelImpl();
+    const div = document.getElementById('partid');
+
+    const partId = getPartIDs(modelImpl);
+    console.log("[getPartIDs]", partId);
+    console.log("[getParamIDs]", getParamIDs(modelImpl));
+    partId.forEach((id, index) => {
+        const idElement = document.createElement('button');
+        idElement.textContent = id;
+        div.appendChild(idElement);
+        idElement.style.margin = '8px';
+    })
+
+    parts = modelImpl._$F2;
+    partsCount = parts.length;
+    let elementCount = 0;
     parts.forEach((element) => {
         console.log(element.getDrawData());
         elementCount += element.getDrawData().length;
@@ -178,13 +276,13 @@ viewer.secret = function() {
 
 // TODO
 viewer.batch = function() {
-    var count = live2DMgr.getCount();
+    let count = live2DMgr.getCount();
     op = function () {
         if (count < live2DMgr.modelJsonList.length) {
-            var curModelPath = live2DMgr.modelJsonList[count];
-            var id = modelJsonIds[curModelPath];
-            var curMotion = live2DMgr.currentIdleMotion();
-            var progress =
+            let curModelPath = live2DMgr.modelJsonList[count];
+            let id = modelJsonIds[curModelPath];
+            let curMotion = live2DMgr.currentIdleMotion();
+            let progress =
                 "[" +
                 (count + 1) +
                 "/" +
@@ -226,7 +324,7 @@ viewer.batch = function() {
 };
 
 viewer.resize = function() {
-    const baseHeight = 512;
+    const canvas = this.canvas;
 
     live2DModel = live2DMgr.getModel(0).live2DModel;
     if (live2DModel == null) return;
@@ -241,9 +339,6 @@ viewer.resize = function() {
         canvas.width = (modelWidth / modelHeight) * baseResolution;
         canvas.height = baseResolution;
     }
-
-    // canvas.width = live2DModel.getCanvasWidth() / live2DModel.getCanvasHeight() * baseHeight;
-    // canvas.height = baseHeight;
 
     // ビュー行列
     const ratio = canvas.height / canvas.width;
@@ -281,7 +376,8 @@ viewer.resize = function() {
 
 viewer.initL2dCanvas = function(canvasId) {
     // canvasオブジェクトを取得
-    canvas = document.getElementById(canvasId);
+    this.canvas = document.getElementById(canvasId);
+    const canvas = this.canvas;
 
     // イベントの登録
     if (canvas.addEventListener) {
@@ -304,8 +400,20 @@ viewer.initL2dCanvas = function(canvasId) {
 
 function connectBtn() {
     // Initialize UI components
-    btnPrev = document.getElementById("btnPrev");
-    btnNext = document.getElementById("btnNext");
+    addFilePicker('select', function (path) {
+        this.selectedPath = path;
+        this.modelName = path.dirname(this.selectedPath);
+        console.log('selectedPath: ' + this.selectedPath);
+        const root = getModelPath(path);
+        loadModels(root);
+        startDraw();
+    });
+    addFilePicker('selectOut', function (path) {
+        this.outputPath = path.toString();
+        console.log('output Path: ' + this.outputPath);
+    });
+    let btnPrev = document.getElementById("btnPrev");
+    let btnNext = document.getElementById("btnNext");
     btnPrev.addEventListener("click", function (e) {
         viewer.changeModel(-1);
     });
@@ -313,75 +421,99 @@ function connectBtn() {
         viewer.changeModel(1);
     });
 
-    btnGoto = document.getElementById("btnGoto");
+    let btnGoto = document.getElementById("btnGoto");
     btnGoto.addEventListener("click", function (e) {
         viewer.goto();
     });
 
-    btnPlayPause = document.getElementById("btnPlayPause");
+    let btnPlayPause = document.getElementById("btnPlayPause");
     btnPlayPause.addEventListener("click", function (e) {
         viewer.togglePlayPause();
     });
     btnPlayPause.textContent = isPlay ? "Pause" : "Play";
 
-    btnSave = document.getElementById("btnSave");
+    let btnSave = document.getElementById("btnSave");
     btnSave.addEventListener("click", function (e) {
         viewer.save();
     });
 
-    btnSaveLayer = document.getElementById("btnSaveLayer");
+    let btnSaveLayer = document.getElementById("btnSaveLayer");
     btnSaveLayer.addEventListener("click", function (e) {
         viewer.saveLayer();
     });
 
-    btnSecret = document.getElementById("btnSecret");
+    let btnSavePart = document.getElementById("btnSavePart");
+    btnSavePart.addEventListener("click", function (e) {
+        viewer.savePart();
+    });
+
+    let btnSecret = document.getElementById("btnSecret");
     btnSecret.addEventListener("click", function (e) {
         viewer.secret();
     });
 
-    btnBatch = document.getElementById("btnBatch");
+    let btnBatch = document.getElementById("btnBatch");
     btnBatch.addEventListener("click", function (e) {
         viewer.batch();
     });
 
-    btnResize = document.getElementById("btnResize");
+    let btnResize = document.getElementById("btnResize");
     btnResize.addEventListener("click", function (e) {
         viewer.resize();
     });
 
-    btnLookRandom = document.getElementById("btnLookRandom");
+    let btnLookRandom = document.getElementById("btnLookRandom");
     btnLookRandom.addEventListener("click", function (e) {
-        isLookRandom = !isLookRandom;
+        this.isLookRandom = !this.isLookRandom;
     });
 
-    btnPrevMotion = document.getElementById("btnPrevMotion");
+    let btnPrevMotion = document.getElementById("btnPrevMotion");
     btnPrevMotion.addEventListener("click", function (e) {
         live2DMgr.prevIdleMotion();
     });
-    btnNextMotion = document.getElementById("btnNextMotion");
+    let btnNextMotion = document.getElementById("btnNextMotion");
     btnNextMotion.addEventListener("click", function (e) {
         live2DMgr.nextIdleMotion();
     });
 
 }
 
-async function loadModels() {
+function getModelPath(modelPath) {
+    let paths = modelPath;
+
+    if (paths) {
+        // paths = 'file://' + paths;
+        console.log("path: " + paths)
+        thisRef.selectedPath = paths;
+    }
+
+    return paths.toString();
+}
+
+async function loadModels(path) {
     // Load all models
-    let filelist = [];
-    walkdir(datasetRoot, function (filepath) {
-        // todo: filepath.endsWith(".moc3") ||
+    let files = [];
+    let dir = path ? path : datasetRoot;
+    console.log(dir);
+    walkdir(dir, function (filepath) {
         if (filepath.endsWith(".moc")) {
-            filelist.push(filepath);
+            files.push(filepath);
         }
     });
-    console.log("file list: " + filelist);
-    live2DMgr.setModelJsonList(loadModel(filelist));
+
+    console.log("file list: " + files);
+    live2DMgr.setModelJsonList(loadModel(files));
 }
 
 viewer.init = function() {
     connectBtn();
     loadModels();
+    startDraw();
+};
 
+function startDraw() {
+
+    const canvas = this.canvas;
     // 3Dバッファの初期化
     const width = canvas.width;
     const height = canvas.height;
@@ -482,8 +614,8 @@ viewer.draw = function () {
     MatrixStack.multMatrix(viewMatrix.getArray());
     MatrixStack.push();
 
-    for (var i = 0; i < live2DMgr.numModels(); i++) {
-        var model = live2DMgr.getModel(i);
+    for (let i = 0; i < live2DMgr.numModels(); i++) {
+        let model = live2DMgr.getModel(i);
 
         if (model == null) return;
 
@@ -493,7 +625,7 @@ viewer.draw = function () {
 
             if (!isModelShown && i == live2DMgr.numModels() - 1) {
                 isModelShown = !isModelShown;
-                var btnPrev = document.getElementById("btnPrev");
+                let btnPrev = document.getElementById("btnPrev");
                 btnPrev.removeAttribute("disabled");
                 btnPrev.setAttribute("class", "active");
 
@@ -512,11 +644,11 @@ viewer.draw = function () {
 };
 
 viewer.changeModel = function (inc = 1) {
-    btnPrev = document.getElementById("btnPrev");
+    let btnPrev = document.getElementById("btnPrev");
     btnPrev.setAttribute("disabled", "disabled");
     btnPrev.setAttribute("class", "inactive");
 
-    btnNext = document.getElementById("btnNext");
+    let btnNext = document.getElementById("btnNext");
     btnNext.setAttribute("disabled", "disabled");
     btnNext.setAttribute("class", "inactive");
 
@@ -527,8 +659,10 @@ viewer.changeModel = function (inc = 1) {
 
     txtInfo = document.getElementById("txtInfo");
 
-    var count = live2DMgr.getCount();
-    var curModelPath = live2DMgr.modelJsonList[count];
+    let count = live2DMgr.getCount();
+    let curModelPath = live2DMgr.modelJsonList[count];
+    this.selectedPath = curModelPath;
+    this.modelName = path.dirname(this.selectedPath);
     txtInfo.textContent =
         "[" +
         (count + 1) +
@@ -542,8 +676,8 @@ viewer.changeModel = function (inc = 1) {
 };
 
 viewer.flagBlacklist = function () {
-    var count = live2DMgr.getCount();
-    var curModelPath = live2DMgr.modelJsonList[count];
+    let count = live2DMgr.getCount();
+    let curModelPath = live2DMgr.modelJsonList[count];
     relativeCurModelPath = curModelPath.slice(datasetRoot.length + 1); // Include the '/'
     fs.appendFileSync(blacklistPath, relativeCurModelPath + "\n");
     console.log("[flagBlacklist]", "Flagged " + relativeCurModelPath);
@@ -571,6 +705,7 @@ function md5file(filePath) {
 
 function loadModel(filelist) {
     let modelJsonList = [];
+    console.log(filelist);
     filelist.forEach((filepath) => {
         console.log(" filepath: " + filepath);
         if (filepath.endsWith(".moc")) {
@@ -579,7 +714,7 @@ function loadModel(filelist) {
         if (filepath.endsWith(".moc3")) {
             console.log("It's a v3 moc");
         }
-        modelJson = loadModelJson(filepath);
+        const modelJson = loadModelJson(filepath);
         console.log("model: " + modelJson);
         if (modelJson) {
             modelJsonList.push(...modelJson);
@@ -594,11 +729,13 @@ function loadModel(filelist) {
         return this.indexOf(e) < 0;
     }, this.blacklist);
     console.log("[loadModel]", modelJsonList.length + " model loaded");
+    this.selectedPath = modelJsonList[0];
+    console.log('selectedPath: ' + this.selectedPath);
     return modelJsonList;
 }
 
 function loadModelJson(mocPath) {
-    pardir = path.dirname(mocPath);
+    const pardir = path.dirname(mocPath);
     let textures = []; // *.png
     let physics; // *.physics or physics.json
     let pose; // pose.json
@@ -614,15 +751,18 @@ function loadModelJson(mocPath) {
             filepath.endsWith("physics.json")
         ) {
             physics = filepath.replace(pardir + "/", "");
+            // console.log('physics: ' + physics);
         }
         if (filepath.endsWith("pose.json")) {
             pose = filepath.replace(pardir + "/", "");
         }
         if (filepath.endsWith(".mtn")) {
             motions.push(filepath.replace(pardir + "/", ""));
+            // console.log('motions: ' + motions);
         }
         if (filepath.endsWith(".exp.json")) {
             expressions.push(filepath.replace(pardir + "/", ""));
+            // console.log('expressions: ' + expressions);
         }
         if (filepath.endsWith("generated.model.json")) {
             if (!ignoreGeneratedJson) {
@@ -646,7 +786,7 @@ function loadModelJson(mocPath) {
         }
         textures.sort();
         motions.sort();
-        var model = {};
+        let model = {};
         model["version"] = "AutoGenerated 1.0.0";
         model["model"] = mocPath.replace(pardir + "/", "");
         model["textures"] = textures;
@@ -667,8 +807,8 @@ function loadModelJson(mocPath) {
                 model["motions"]["idle"].push({ file: motion });
             });
         }
-        json = JSON.stringify(model, null, 3);
-        generatedJsonPath = path.join(pardir, "generated.model.json");
+        const json = JSON.stringify(model, null, 3);
+        const generatedJsonPath = path.join(pardir, "generated.model.json");
         modelJson.push(generatedJsonPath);
         fs.writeFileSync(generatedJsonPath, json);
     }
@@ -681,8 +821,8 @@ function loadModelJson(mocPath) {
  * マウスホイールによる拡大縮小
  */
 function modelScaling(scale) {
-    var isMaxScale = thisRef.viewMatrix.isMaxScale();
-    var isMinScale = thisRef.viewMatrix.isMinScale();
+    let isMaxScale = thisRef.viewMatrix.isMaxScale();
+    let isMinScale = thisRef.viewMatrix.isMinScale();
 
     thisRef.viewMatrix.adjustScale(0, 0, scale);
 

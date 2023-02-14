@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Live2D Tool</title>
     <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval'" />
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'unsafe-eval'"/>
 </head>
 
 <body onload="viewer()">
@@ -15,6 +15,9 @@
 
 <!-- Live2D Framework -->
 <script src="src/live2d/Live2DFramework.js"></script>
+<script src="src/live2d/live2dcubismcore.min.js"></script>
+
+<script src="src/shared.js"></script>
 
 <!-- User's Script (Plus) -->
 <script src="src/utils/MatrixStack.js"></script>
@@ -24,27 +27,49 @@
 <script src="src/LAppModel.js"></script>
 <script src="src/LAppLive2DManager.js"></script>
 <script src="src/renderPlus.js"></script>
-<script src="src/shared.js"></script>
-<p>
-    <button id="btnPrev" class="active">Prev Model</button>
-    <button id="btnNext" class="active">Next Model</button>
+
+<div style="max-width: 36px;position: absolute;top: 32px;left: 16px;">
+
+    <div style="margin: 8px">
+        <button id="select">Select</button>
+        <button id="selectOut">Choose Output</button>
+        <button id="btnPrev" class="active">Prev Model</button>
+        <button id="btnNext" class="active">Next Model</button>
+    </div>
     <input type="number" id="editGoto" min="1" value="1">
     <button id="btnGoto">Goto Model</button>
-    <button id="btnPlayPause">Play</button>
-    <button id="btnSave">Save As Image</button>
-    <button id="btnSaveLayer">Save As Layers</button>
-    <button id="btnSecret">Secret</button>
+
+    <div style="margin: 8px">
+        <button id="btnPlayPause">Play</button>
+        <button id="btnSave">Save As Image</button>
+        <button id="btnSaveLayer">Save As Layers</button>
+        <button id="btnSavePart">Save As Parts</button>
+    </div>
+
+    <button style="margin: 8px" id="btnSecret">Show PartId</button>
     <button id="btnBatch">Batch</button>
     <button id="btnResize">Resize</button>
-    <button id="btnLookRandom">Look Random</button>
-    <button id="btnPrevMotion">Prev Motion</button>
-    <button id="btnNextMotion">Next Motion</button>
-</p>
-<div id="txtInfo" style="color: #070707; background-color: blanchedalmond"></div>
+
+    <div style="margin: 8px">
+        <button id="btnLookRandom">Look Random</button>
+        <button id="btnPrevMotion">Prev Motion</button>
+        <button id="btnNextMotion">Next Motion</button>
+    </div>
+
+</div>
+
 
 <div style="max-height: 1024px;max-width:1024px;overflow: scroll;">
+    <div id="txtInfo"
+         style="align-content: baseline; margin: 8px;left: 16px;color: #070707; background-color: blanchedalmond"></div>
+
     <canvas id="glcanvas" width="1024px" height="1024px" style="border:dashed 1px #CCC"></canvas>
+
+    <div id="partid"
+         style="left: 96px;top: 32px;margin: 16px;z-index: 1000;max-width: 48px;display: table;clear: both;position: absolute"></div>
+
 </div>
+
 </body>
 
 </html>

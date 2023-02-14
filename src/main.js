@@ -9,25 +9,12 @@ function createWindow () {
     height: 1080,
     webPreferences: {
       enableRemoteModule: true,
-      nodeIntegration: true
+      nodeIntegration: true,
     },
-    title: 'live2d-app'
+    title: 'live2d-app-v2'
   })
-
-  const view = new BrowserWindow({
-    width: 1920,
-    height: 1080,
-    webPreferences: {
-      enableRemoteModule: true,
-      nodeIntegration: true
-    },
-    title: 'pixi-render'
-  })
-  view.loadFile('pixiRender.html')
 
   win.loadFile('index.html')
-
-  win.addTabbedWindow(view)
 
   // Open the DevTools.
   win.webContents.openDevTools()
@@ -35,29 +22,42 @@ function createWindow () {
     win.webContents.focus();
   });
 
-  view.webContents.openDevTools()
-  win.webContents.on('devtools-opened', () => {
-    win.webContents.focus();
-  });
+  // const view = new BrowserWindow({
+  //   width: 1920,
+  //   height: 1080,
+  //   webPreferences: {
+  //     enableRemoteModule: true,
+  //     nodeIntegration: true,
+  //     contextIsolation: true,
+  //   },
+  //   title: 'pixi-render'
+  // })
+  // view.loadFile('pixiRender.html')
+  //
+  // win.addTabbedWindow(view)
+  //
+  // view.webContents.openDevTools()
+  // view.webContents.on('devtools-opened', () => {
+  //   view.webContents.focus();
+  // });
 }
 
 app.whenReady().then(createWindow)
 
 app.on('new-window-for-tab', (event) => {
-  const window = require('electron').BrowserWindow;
-  const newWin = new BrowserWindow({
-    width: 1920,
-    height: 1080,
-    webPreferences: {
-      enableRemoteModule: true,
-      nodeIntegration: true
-    }
-  })
-  newWin.loadFile(window.getAllWindows().length % 2 === 1 ? 'pixiRender.html' : 'index.html')
-  newWin.webContents.openDevTools()
-  newWin.webContents.on('devtools-opened', () => {
-    newWin.webContents.focus();
-  });
+  // const newWin = new BrowserWindow({
+  //   width: 1920,
+  //   height: 1080,
+  //   webPreferences: {
+  //     enableRemoteModule: true,
+  //     nodeIntegration: true
+  //   }
+  // })
+  // newWin.loadFile('index.html');
+  // newWin.webContents.openDevTools();
+  // newWin.webContents.on('devtools-opened', () => {
+  //   newWin.webContents.focus();
+  // });
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

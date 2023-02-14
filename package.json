@@ -3,12 +3,19 @@
   "version": "1.0.0",
   "main": "src/main.js",
   "scripts": {
-    "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron-forge start",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@electron-forge/cli": "^6.0.5",
+    "@electron-forge/maker-deb": "^6.0.5",
+    "@electron-forge/maker-rpm": "^6.0.5",
+    "@electron-forge/maker-squirrel": "^6.0.5",
+    "@electron-forge/maker-zip": "^6.0.5",
     "electron": "^11.5.0"
   },
   "dependencies": {
@@ -25,18 +32,37 @@
     "@pixi/ticker": "^6.5.9",
     "@pixi/unsafe-eval": "^6.5.9",
     "@pixi/utils": "^6.5.9",
+    "electron-squirrel-startup": "^1.0.0",
+    "flatted": "^3.2.7",
     "json-cyclic": "^1.0.2",
-    "package.json": "^2.0.1",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^6.5.9"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jeffshee/live2d.git"
-  },
-  "bugs": {
-    "url": "https://github.com/jeffshee/live2d/issues"
-  },
-  "homepage": "https://github.com/jeffshee/live2d#readme",
-  "description": "This is a tool for rendering Live2d models (only v2 is currently supported). The modified SDK allows you to output the rendered texture to separate PNG images."
+  "config": {
+    "forge": {
+      "packagerConfig": {},
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "electron_quick_start"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
+  }
 }

@@ -1,4 +1,4 @@
-const { Live2DModel } = require("pixi-live2d-display");
+const { Live2DModel, CubismMatrix44 } = require("pixi-live2d-display");
 const PIXI = require("pixi.js");
 
 const { Ticker, TickerPlugin } = require("@pixi/ticker")
@@ -25,6 +25,8 @@ async function pixiViewer() {
     this.platform = window.navigator.platform.toLowerCase();
 
     this.selectedPath = ""
+    this.outputPath = ""
+    this.modelName = ""
 
     const canvas = document.getElementById('canvas');
     this.app = new PIXI.Application({
@@ -42,11 +44,14 @@ async function pixiViewer() {
 
     await loadModel();
 
+    this.projMatrix = null;
+
     connectBtn();
 }
 
 async function loadModel(modelPath) {
     let model;
+    this.selectedPath = modelPath;
     // clean stage
     const index = this.app.stage.children.indexOf(this.model);
     if (index >= 0) {
@@ -58,6 +63,7 @@ async function loadModel(modelPath) {
         model = await Live2DModel.from(modelPath, {
             autoInteract: true,
         });
+        this.selectedPath = modelPath;
     } else {
         model = await loadPixiModel();
     }
@@ -65,14 +71,18 @@ async function loadModel(modelPath) {
 }
 
 async function renderModel(model) {
+    thisRef.model = model;
     await this.app.stage.addChild(model);
-    this.model = model;
 
     // console.log('111111: ' + JSON.stringify(decycle(model)))
 
     const motionManager = model.internalModel.motionManager;
+    const settings = motionManager.settings;
     // console.log('111111: ' + JSON.stringify(decycle(motionManager)))
 
+    console.log(this.projMatrix + ' settings: ' + JSON.stringify(decycle(motionManager.settings)))
+
+    this.modelName = settings.name;
     model.position.set(32, 32);
 
     console.log(this.app, this.app.renderer)
@@ -80,7 +90,8 @@ async function renderModel(model) {
 
     const motionGroups = []
     const definitions = motionManager.definitions;
-    console.log("motion definitions: " + definitions);
+    console.log('111111: ' + JSON.stringify(decycle(definitions)))
+
     for (const [group, motions] of Object.entries(definitions)) {
         motionGroups.push({
             name: group,
@@ -93,43 +104,89 @@ async function renderModel(model) {
 }
 
 function connectBtn() {
-    addFilePicker('select', async function (path) {
+    addFilePicker('select', function (path) {
         this.selectedPath = path;
         console.log('selectedPath: ' + this.selectedPath);
-        await loadModel(path);
+        loadModel(path);
     });
     const btnSave = document.getElementById("btnSave");
     btnSave.addEventListener("click", function (e) {
         pixiViewer.save();
     });
+    const btnSaveLayer = document.getElementById("btnSaveLayer");
+    btnSaveLayer.addEventListener("click", function (e) {
+        pixiViewer.saveAsLayer();
+    });
 }
 
-pixiViewer.save = async function () {
-    const selectedPath = thisRef.selectedPath;
-    console.log("1111: " + selectedPath)
-    const name = selectedPath.substring(selectedPath.indexOf('/') + 1, selectedPath.lastIndexOf('/'));
-    console.log("1111: " + name)
-    const output = path.join(outputRoot, name)
-    fs.mkdirSync(output, { recursive: true });
-    await saveToPng(path.join(output, name + ".png"), 'canvas');
+pixiViewer.save = function () {
+    getOutputPath();
+    fs.mkdirSync(thisRef.outputPath, { recursive: true });
+    const path = require("path");
+    saveToPng(path.join(thisRef.outputPath, thisRef.modelName + ".png"), 'canvas');
 }
 
-pixiViewer.saveAsLayer = function (dir = path.join(outputRoot, "layer")) {
+pixiViewer.saveAsLayer = function () {
+    getOutputPath();
+    const path = require("path");
+    const layerPath = path.join(thisRef.outputPath, 'layer');
+    fs.mkdirSync(layerPath, { recursive: true });
+    const model = thisRef.model;
 
+    thisRef.projMatrix = model.coreModel;
+    const {parse, stringify, toJSON, fromJSON} = require('flatted');
+    const { decycle, encycle } = require('json-cyclic');
+    console.log("123123123123:   " +  JSON.stringify(decycle(model)))
+
+    const elementList = this.projMatrix;
+    const canvas = document.getElementById('canvas');
+
+    MatrixStack.reset();
+    MatrixStack.loadIdentity();
+    MatrixStack.multMatrix(thisRef.projMatrix.getArray());
+    MatrixStack.multMatrix(thisRef.viewMatrix.getArray());
+    MatrixStack.push();
+
+    elementList.forEach((item, index) => {
+        if (gl.COLOR_BUFFER_BIT < 128) {
+            return;
+        }
+        let element = item.element;
+        let partID = item.partID;
+        let order = ("000" + index).slice(-4);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        model.drawElement(gl, element);
+        // Separate directory for each partID
+        if (!fs.existsSync(path.join(dir, partID))) {
+            fs.mkdirSync(path.join(dir, partID));
+        }
+
+        let img = canvas.toDataURL();
+        let data = img.replace(/^data:image\/\w+;base64,/, "");
+        let buf = Buffer.from(data, "base64");
+        fs.writeFileSync(path.join(layerPath, partID, order + "_" + partID + ".png"), buf);
+    });
+
+    MatrixStack.pop();
+
+}
+
+function getOutputPath() {
+    thisRef.outputPath = path.join(outputRoot, thisRef.modelName);
 }
 
 function loadPixiModel(paths) {
     let filelist = [];
 
     walkdir(paths || "dataset", function (filepath) {
-        if (filepath.endsWith(".model.json") || filepath.endsWith(".model3.json")) {
+        if (filepath.endsWith(".model3.json")) {
             filelist.push(filepath);
         }
     });
     console.log("pixi file path: " + filelist);
     const last = filelist[0];
     console.log(last);
-    this.selectedPath = last;
+    thisRef.selectedPath = last;
     return Live2DModel.from(last);
 }
 
@@ -148,5 +205,8 @@ function scale(scaleX, scaleY, model) {
 
     if (model) {
         model.scale.set(this._scaleX, this._scaleY);
+        const canvas = document.getElementById('canvas');
+        canvas.height = model.height + 64
+        canvas.width = model.width + 64
     }
 }

@@ -73,6 +73,7 @@ function viewer() {
     this.selectedPath = datasetRoot;
     this.outputPath = outputRoot;
     this.modelName = "";
+    this.ignoredPart = [];
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
@@ -262,6 +263,7 @@ viewer.secret = function() {
         div.appendChild(idElement);
         idElement.style.margin = '8px';
         idElement.addEventListener('click', function () {
+            console.log('id: ' + id);
             viewer.drawExceptPart(id);
         })
     })
@@ -271,6 +273,12 @@ viewer.secret = function() {
 viewer.drawExceptPart = function (id) {
     let live2DModel = live2DMgr.getModel(0).live2DModel;
     let modelImpl = live2DModel.getModelImpl();
+    if (thisRef.ignoredPart.includes(id)) {
+        const index = thisRef.ignoredPart.indexOf(id);
+        thisRef.ignoredPart.splice(index, 1);
+    } else {
+        thisRef.ignoredPart.push(id);
+    }
 
     parts = modelImpl._$F2;
     partsCount = parts.length;
@@ -298,7 +306,7 @@ viewer.drawExceptPart = function (id) {
         const element = item.element;
 
         const partID = item.partID;
-        if (partID !== id) {
+        if (!thisRef.ignoredPart.includes(partID)) {
             console.log(id + partID);
             model.drawElement(gl, element);
         }

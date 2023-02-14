@@ -261,7 +261,16 @@ viewer.secret = function() {
         idElement.textContent = id;
         div.appendChild(idElement);
         idElement.style.margin = '8px';
+        idElement.addEventListener('click', function () {
+            viewer.drawExceptPart(id);
+        })
     })
+
+};
+
+viewer.drawExceptPart = function (id) {
+    let live2DModel = live2DMgr.getModel(0).live2DModel;
+    let modelImpl = live2DModel.getModelImpl();
 
     parts = modelImpl._$F2;
     partsCount = parts.length;
@@ -272,7 +281,36 @@ viewer.secret = function() {
     });
     console.log("[partCount]", partsCount);
     console.log("[elementCount]", elementCount);
-};
+
+    const model = live2DMgr.getModel(0);
+    model.update(frameCount);
+    let elementList = model.live2DModel.getElementList();
+
+    // Save images for each element
+    MatrixStack.reset();
+    MatrixStack.loadIdentity();
+    MatrixStack.multMatrix(projMatrix.getArray());
+    MatrixStack.multMatrix(viewMatrix.getArray());
+    MatrixStack.push();
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    elementList.forEach((item, index) => {
+        const element = item.element;
+
+        const partID = item.partID;
+        if (partID !== id) {
+            console.log(id + partID);
+            model.drawElement(gl, element);
+        }
+
+    });
+
+    MatrixStack.pop();
+
+    const canvas = document.getElementById('glcanvas');
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+}
 
 // TODO
 viewer.batch = function() {
@@ -596,7 +634,7 @@ viewer.draw = function () {
     MatrixStack.reset();
     MatrixStack.loadIdentity();
 
-    if (frameCount % 30 == 0) {
+    if (frameCount % 30 === 0) {
         lookRandom();
     }
 

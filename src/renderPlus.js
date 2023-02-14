@@ -251,6 +251,7 @@ viewer.secret = function() {
     // Print model stat
     let live2DModel = live2DMgr.getModel(0).live2DModel;
     let modelImpl = live2DModel.getModelImpl();
+    const div = document.getElementById('partid');
 
     console.log("[getPartIDs]", getPartIDs(modelImpl));
     console.log("[getParamIDs]", getParamIDs(modelImpl));

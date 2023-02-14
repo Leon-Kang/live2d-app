@@ -28,7 +28,7 @@
 <script src="src/LAppLive2DManager.js"></script>
 <script src="src/renderPlus.js"></script>
 
-<p>
+<p style="max-width: 36px;position: absolute;top: 32px;left: 16px;">
     <button id="select">Select</button>
     <button id="selectOut">Choose Output</button>
     <button id="btnPrev" class="active">Prev Model</button>
@@ -46,12 +46,13 @@
     <button id="btnPrevMotion">Prev Motion</button>
     <button id="btnNextMotion">Next Motion</button>
 </p>
-<div id="txtInfo" style="color: #070707; background-color: blanchedalmond"></div>
 
 <div style="max-height: 1024px;max-width:1024px;overflow: scroll;">
+    <div id="txtInfo" style="align-content: baseline; margin: 8px;left: 16px;color: #070707; background-color: blanchedalmond"></div>
     <canvas id="glcanvas" width="1024px" height="1024px" style="border:dashed 1px #CCC"></canvas>\
-    <div id="partid"></div>
 </div>
+
+<div id="partid"></div>
 </body>
 
 </html>

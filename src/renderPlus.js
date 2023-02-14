@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
 const {Live2DModel} = require("pixi-live2d-display");
+const constants = require("constants");
 
 nativeTheme.themeSource = "dark";
 
@@ -20,7 +21,7 @@ let modelJsonIds = {};
 
 let getPartIDs = function (modelImpl) {
     let partIDs = [];
-    partsDataList = modelImpl._$Xr();
+    const partsDataList = modelImpl._$Xr();
     partsDataList.forEach((element) => {
         partIDs.push(element._$NL.id);
     });
@@ -29,7 +30,7 @@ let getPartIDs = function (modelImpl) {
 
 const getParamIDs = function (modelImpl) {
     let paramIDs = [];
-    paramDefSet = modelImpl._$E2()._$4S;
+    const paramDefSet = modelImpl._$E2()._$4S;
     paramDefSet.forEach((element) => {
         paramIDs.push(element._$wL.id);
     });
@@ -69,6 +70,10 @@ function viewer() {
     this.isLookRandom = false;
     this.frameCount = 0;
 
+    this.selectedPath = datasetRoot;
+    this.outputPath = outputRoot;
+    this.modelName = "";
+
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
         let keyCode = e.keyCode;
@@ -105,17 +110,25 @@ viewer.goto = function () {
     viewer.changeModel(0);
 };
 
-viewer.save = function (filepath = path.join(outputRoot, "image.png")) {
+viewer.save = function (filepath = path.join(thisRef.outputPath, "image.png")) {
     // Save canvas to png file
+    const paths = path.dirname(this.selectedPath);
+    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    const dir = path.join(thisRef.outputPath, thisRef.modelName);
     const canvas = this.canvas;
     let img = canvas.toDataURL();
     let data = img.replace(/^data:image\/\w+;base64,/, "");
     let buf = Buffer.from(data, "base64");
-    fs.writeFileSync(filepath, buf);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'image.png'), buf);
+    console.log('save image success: path - ' + this.outputPath);
 }
 
-viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
+viewer.saveLayer = function(dirpath) {
     // Create dir
+    const paths = path.dirname(this.selectedPath);
+    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    const dir = dirpath || path.join(thisRef.outputPath, thisRef.modelName, 'layer');
     fs.mkdirSync(dir, { recursive: true });
 
     // Keep previous playing state, and set to pause to stop calling draw()
@@ -153,6 +166,7 @@ viewer.saveLayer = function(dir = path.join(outputRoot, "layer")) {
     MatrixStack.pop();
 
     isPlay = prevIsPlay;
+    console.log('save layers success: path - ' + thisRef.outputPath);
 };
 
 viewer.togglePlayPause = function() {
@@ -175,7 +189,9 @@ viewer.savePart = function () {
         console.log(element.getDrawData());
     });
 
-    const dir = path.join(outputRoot, "parts");
+    const paths = path.dirname(this.selectedPath);
+    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    const dir = path.join(thisRef.outputPath, thisRef.modelName, 'parts');
     // Create dir
     fs.mkdirSync(dir, { recursive: true });
 
@@ -227,7 +243,7 @@ viewer.savePart = function () {
     MatrixStack.pop();
 
     isPlay = prevIsPlay;
-
+    console.log('save parts success: path - ' + thisRef.outputPath);
 }
 
 viewer.secret = function() {
@@ -377,10 +393,15 @@ function connectBtn() {
     // Initialize UI components
     addFilePicker('select', function (path) {
         this.selectedPath = path;
+        this.modelName = path.dirname(this.selectedPath);
         console.log('selectedPath: ' + this.selectedPath);
         const root = getModelPath(path);
         loadModels(root);
         startDraw();
+    });
+    addFilePicker('selectOut', function (path) {
+        this.outputPath = path.toString();
+        console.log('output Path: ' + this.outputPath);
     });
     let btnPrev = document.getElementById("btnPrev");
     let btnNext = document.getElementById("btnNext");
@@ -631,6 +652,8 @@ viewer.changeModel = function (inc = 1) {
 
     let count = live2DMgr.getCount();
     let curModelPath = live2DMgr.modelJsonList[count];
+    this.selectedPath = curModelPath;
+    this.modelName = path.dirname(this.selectedPath);
     txtInfo.textContent =
         "[" +
         (count + 1) +
@@ -697,6 +720,8 @@ function loadModel(filelist) {
         return this.indexOf(e) < 0;
     }, this.blacklist);
     console.log("[loadModel]", modelJsonList.length + " model loaded");
+    this.selectedPath = modelJsonList[0];
+    console.log('selectedPath: ' + this.selectedPath);
     return modelJsonList;
 }
 
@@ -717,18 +742,18 @@ function loadModelJson(mocPath) {
             filepath.endsWith("physics.json")
         ) {
             physics = filepath.replace(pardir + "/", "");
-            console.log('physics: ' + physics);
+            // console.log('physics: ' + physics);
         }
         if (filepath.endsWith("pose.json")) {
             pose = filepath.replace(pardir + "/", "");
         }
         if (filepath.endsWith(".mtn")) {
             motions.push(filepath.replace(pardir + "/", ""));
-            console.log('motions: ' + motions);
+            // console.log('motions: ' + motions);
         }
         if (filepath.endsWith(".exp.json")) {
             expressions.push(filepath.replace(pardir + "/", ""));
-            console.log('expressions: ' + expressions);
+            // console.log('expressions: ' + expressions);
         }
         if (filepath.endsWith("generated.model.json")) {
             if (!ignoreGeneratedJson) {

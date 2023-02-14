@@ -110,18 +110,19 @@ viewer.goto = function () {
     viewer.changeModel(0);
 };
 
-viewer.save = function (filepath = path.join(thisRef.outputPath, "image.png")) {
+viewer.save = function (filepath) {
     // Save canvas to png file
     const paths = path.dirname(this.selectedPath);
     thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
-    const dir = path.join(thisRef.outputPath, thisRef.modelName);
+    const dir = filepath || path.join(thisRef.outputPath, `${thisRef.modelName}.png`);
+
     const canvas = this.canvas;
     let img = canvas.toDataURL();
     let data = img.replace(/^data:image\/\w+;base64,/, "");
     let buf = Buffer.from(data, "base64");
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'image.png'), buf);
-    console.log('save image success: path - ' + this.outputPath);
+    fs.mkdirSync(thisRef.outputPath, { recursive: true });
+    fs.writeFileSync(dir, buf);
+    console.log('save image success: path - ' + dir);
 }
 
 viewer.saveLayer = function(dirpath) {

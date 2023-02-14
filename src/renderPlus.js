@@ -253,8 +253,15 @@ viewer.secret = function() {
     let modelImpl = live2DModel.getModelImpl();
     const div = document.getElementById('partid');
 
-    console.log("[getPartIDs]", getPartIDs(modelImpl));
+    const partId = getPartIDs(modelImpl);
+    console.log("[getPartIDs]", partId);
     console.log("[getParamIDs]", getParamIDs(modelImpl));
+    partId.forEach((id, index) => {
+        const idElement = document.createElement('button');
+        idElement.textContent = id;
+        div.appendChild(idElement);
+        idElement.style.margin = '8px';
+    })
 
     parts = modelImpl._$F2;
     partsCount = parts.length;

@@ -184,9 +184,7 @@ viewer.savePart = function () {
     console.log("[getPartIDs]", getPartIDs(modelImpl));
     console.log("[getParamIDs]", getParamIDs(modelImpl));
 
-    parts = modelImpl._$F2;
-    ids = getPartIDs(modelImpl);
-    partsCount = parts.length;
+    const parts = modelImpl._$F2;
     parts.forEach((element) => {
         console.log(element.getDrawData());
     });
@@ -221,6 +219,9 @@ viewer.savePart = function () {
             return;
         }
         const partID = item.partID;
+        if (thisRef.ignoredPart.length > 0 && thisRef.ignoredPart.includes(partID)) {
+            return;
+        }
         if (tempId.length === 0) {
             tempId = partID;
         }
@@ -254,7 +255,13 @@ viewer.secret = function() {
     let modelImpl = live2DModel.getModelImpl();
     const div = document.getElementById('partid');
 
-    const partId = getPartIDs(modelImpl);
+    // const partId = getPartIDs(modelImpl);
+    const partId = [];
+    let elementList = live2DModel.getElementList();
+    elementList.forEach((element) => {
+        const partID = element.partID;
+        !partId.includes(partID) && partId.push(element.partID);
+    })
     console.log("[getPartIDs]", partId);
     console.log("[getParamIDs]", getParamIDs(modelImpl));
     partId.forEach((id, index) => {
@@ -262,15 +269,15 @@ viewer.secret = function() {
         idElement.textContent = id;
         div.appendChild(idElement);
         idElement.style.margin = '8px';
-        idElement.addEventListener('click', function () {
+        idElement.addEventListener('click', async function () {
             console.log('id: ' + id);
-            viewer.drawExceptPart(id);
+            await viewer.drawExceptPart(id);
         })
     })
 
 };
 
-viewer.drawExceptPart = function (id) {
+viewer.drawExceptPart = async function (id) {
     let live2DModel = live2DMgr.getModel(0).live2DModel;
     let modelImpl = live2DModel.getModelImpl();
     if (thisRef.ignoredPart.includes(id)) {
@@ -280,8 +287,8 @@ viewer.drawExceptPart = function (id) {
         thisRef.ignoredPart.push(id);
     }
 
-    parts = modelImpl._$F2;
-    partsCount = parts.length;
+    const parts = modelImpl._$F2;
+    const partsCount = parts.length;
     let elementCount = 0;
     parts.forEach((element) => {
         console.log(element.getDrawData());
@@ -290,34 +297,7 @@ viewer.drawExceptPart = function (id) {
     console.log("[partCount]", partsCount);
     console.log("[elementCount]", elementCount);
 
-    const model = live2DMgr.getModel(0);
-    model.update(frameCount);
-    let elementList = model.live2DModel.getElementList();
-
-    // Save images for each element
-    MatrixStack.reset();
-    MatrixStack.loadIdentity();
-    MatrixStack.multMatrix(projMatrix.getArray());
-    MatrixStack.multMatrix(viewMatrix.getArray());
-    MatrixStack.push();
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    elementList.forEach((item, index) => {
-        const element = item.element;
-
-        const partID = item.partID;
-        if (!thisRef.ignoredPart.includes(partID)) {
-            console.log(id + partID);
-            model.drawElement(gl, element);
-        }
-
-    });
-
-    MatrixStack.pop();
-
-    const canvas = document.getElementById('glcanvas');
-    gl.viewport(0, 0, canvas.width, canvas.height);
-
+    console.log('hide parts success: part - ' + thisRef.ignoredPart);
 }
 
 // TODO
@@ -623,14 +603,14 @@ viewer.startDraw = function() {
                 viewer.draw(); // 1回分描画
             }
 
-            var requestAnimationFrame =
+            const requestAnimationFrame =
                 window.requestAnimationFrame ||
                 window.mozRequestAnimationFrame ||
                 window.webkitRequestAnimationFrame ||
                 window.msRequestAnimationFrame;
 
             // 一定時間後に自身を呼び出す
-            requestAnimationFrame(tick, canvas);
+            requestAnimationFrame(tick, this.canvas);
         })();
     }
 };
@@ -666,8 +646,19 @@ viewer.draw = function () {
         if (model == null) return;
 
         if (model.initialized && !model.updating) {
+
+            let elementList = model.live2DModel.getElementList();
+
+            elementList && elementList.forEach((item, index) => {
+                const element = item.element;
+                const partID = item.partID;
+                if (!thisRef.ignoredPart.includes(partID)) {
+                    model.drawElement(gl, element);
+                }
+            });
+
+
             model.update(frameCount);
-            model.draw(gl);
 
             if (!isModelShown && i == live2DMgr.numModels() - 1) {
                 isModelShown = !isModelShown;

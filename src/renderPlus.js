@@ -426,16 +426,16 @@ viewer.initL2dCanvas = function(canvasId) {
 
 function connectBtn() {
     // Initialize UI components
-    addFilePicker('select', function (path) {
-        this.selectedPath = path;
-        this.modelName = path.dirname(this.selectedPath);
-        console.log('selectedPath: ' + this.selectedPath);
-        const root = getModelPath(path);
+    addFilePicker('select', function (paths) {
+        thisRef.selectedPath = paths.toString();
+        thisRef.modelName = path.dirname(thisRef.selectedPath);
+        console.log('selectedPath: ' + thisRef.selectedPath);
+        const root = getModelPath(paths);
         loadModels(root);
         startDraw();
     });
-    addFilePicker('selectOut', function (path) {
-        this.outputPath = path.toString();
+    addFilePicker('selectOut', function (paths) {
+        this.outputPath = paths.toString();
         console.log('output Path: ' + this.outputPath);
     });
     let btnPrev = document.getElementById("btnPrev");
@@ -689,6 +689,7 @@ viewer.changeModel = function (inc = 1) {
     btnNext.setAttribute("disabled", "disabled");
     btnNext.setAttribute("class", "inactive");
 
+    thisRef.ignoredPart = [];
     isModelShown = false;
 
     live2DMgr.reloadFlg = true;

@@ -3,6 +3,7 @@ const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
 const {Live2DModel} = require("pixi-live2d-display");
 const constants = require("constants");
+const os = require('os');
 
 nativeTheme.themeSource = "dark";
 
@@ -15,6 +16,12 @@ const ignoreGeneratedJson = true; // Ignore the generated JSON file
 const ignoreOriginalJson = true; // Ignore the original JSON file
 const batchOperationMinDelay = 1000;
 const batchOperationDelayRange = 1000;
+
+const isMac = os.platform() === "darwin";
+const isWindows = os.platform() === "win32";
+const isLinux = os.platform() === "linux";
+
+const separateChar = isWindows ? '\\' : '/';
 
 let thisRef = this;
 let modelJsonIds = {};
@@ -74,6 +81,7 @@ function viewer() {
     this.outputPath = outputRoot;
     this.modelName = "";
     this.ignoredPart = [];
+    this.partsBtn = [];
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
@@ -114,7 +122,7 @@ viewer.goto = function () {
 viewer.save = function (filepath) {
     // Save canvas to png file
     const paths = path.dirname(this.selectedPath);
-    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    thisRef.modelName = paths.substring(paths.lastIndexOf(separateChar) + 1);
     const dir = filepath || path.join(thisRef.outputPath, `${thisRef.modelName}.png`);
 
     const canvas = this.canvas;
@@ -129,7 +137,7 @@ viewer.save = function (filepath) {
 viewer.saveLayer = function(dirpath) {
     // Create dir
     const paths = path.dirname(this.selectedPath);
-    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    thisRef.modelName = paths.substring(paths.lastIndexOf(separateChar) + 1);
     const dir = dirpath || path.join(thisRef.outputPath, thisRef.modelName, 'layer');
     fs.mkdirSync(dir, { recursive: true });
 
@@ -190,7 +198,7 @@ viewer.savePart = function () {
     });
 
     const paths = path.dirname(this.selectedPath);
-    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    thisRef.modelName = paths.substring(paths.lastIndexOf(separateChar) + 1);
     const dir = path.join(thisRef.outputPath, thisRef.modelName, 'parts');
     // Create dir
     fs.mkdirSync(dir, { recursive: true });
@@ -264,6 +272,12 @@ viewer.secret = function() {
     })
     console.log("[getPartIDs]", partId);
     console.log("[getParamIDs]", getParamIDs(modelImpl));
+    if (thisRef.partsBtn.length) {
+        while (div.lastElementChild) {
+            div.removeChild(div.lastElementChild);
+        }
+    }
+
     partId.forEach((id, index) => {
         const idElement = document.createElement('button');
         idElement.textContent = id;
@@ -273,6 +287,7 @@ viewer.secret = function() {
             console.log('id: ' + id);
             await viewer.drawExceptPart(id);
         })
+        thisRef.partsBtn.push(idElement);
     })
 
 };
@@ -431,6 +446,13 @@ function connectBtn() {
         thisRef.modelName = path.dirname(thisRef.selectedPath);
         console.log('selectedPath: ' + thisRef.selectedPath);
         const root = getModelPath(paths);
+        thisRef.ignoredPart = [];
+        if (thisRef.partsBtn.length) {
+            const div = document.getElementById('partid');
+            while (div.lastElementChild) {
+                div.removeChild(div.lastElementChild);
+            }
+        }
         loadModels(root);
         startDraw();
     });

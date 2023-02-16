@@ -164,13 +164,20 @@ viewer.saveLayer = function(dirpath) {
         let element = item.element;
         let partID = item.partID;
         let order = ("000" + index).slice(-4);
+        if (element.length === 0) {
+            return;
+        }
+        if (thisRef.ignoredPart.length > 0 && thisRef.ignoredPart.includes(partID)) {
+            return;
+        }
         gl.clear(gl.COLOR_BUFFER_BIT);
         model.drawElement(gl, element);
+        const subDir = partID;
         // Separate directory for each partID
-        if (!fs.existsSync(path.join(dir, partID))) {
-            fs.mkdirSync(path.join(dir, partID));
+        if (!fs.existsSync(path.join(dir, subDir))) {
+            fs.mkdirSync(path.join(dir, subDir));
         }
-        viewer.save(path.join(dir, partID, order + "_" + partID + ".png"));
+        viewer.save(path.join(dir, subDir, index.toString() + '-' + order + ".png"));
     });
 
     MatrixStack.pop();

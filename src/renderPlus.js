@@ -225,6 +225,13 @@ viewer.savePart = function () {
     MatrixStack.multMatrix(viewMatrix.getArray());
     MatrixStack.push();
 
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+
+    model.draw();
+    viewer.save(path.join(dir, "all_part.png"));
+
     let tempId = "";
     let tempOrder = 0;
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -243,9 +250,6 @@ viewer.savePart = function () {
         tempOrder += 1;
         if (tempId !== partID) {
             // const path = require("path");
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir);
-            }
             const fileName = `${index.toString()}-${tempId}-sub${tempOrder.toString()}.png`;
             viewer.save(path.join(dir, fileName));
             tempId = partID;
@@ -549,10 +553,11 @@ viewer.saveAll = async function () {
     console.log('all models list: ' + allModels);
 
     for (let i = 1; i < allModels.length + 1; i++) {
+        await viewer.save()
         await viewer.saveLayer();
         await viewer.savePart();
         await viewer.changeModel();
-        await sleep(500);
+        await sleep(count * 2 + 50);
     }
 }
 

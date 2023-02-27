@@ -3,6 +3,7 @@ const nativeTheme = require("electron");
 const { timeStamp, time } = require("console");
 const {Live2DModel} = require("pixi-live2d-display");
 const constants = require("constants");
+const os = require('os');
 
 nativeTheme.themeSource = "dark";
 
@@ -15,6 +16,12 @@ const ignoreGeneratedJson = true; // Ignore the generated JSON file
 const ignoreOriginalJson = true; // Ignore the original JSON file
 const batchOperationMinDelay = 1000;
 const batchOperationDelayRange = 1000;
+
+const isMac = os.platform() === "darwin";
+const isWindows = os.platform() === "win32";
+const isLinux = os.platform() === "linux";
+
+const separateChar = isWindows ? '\\' : '/';
 
 let thisRef = this;
 let modelJsonIds = {};
@@ -74,6 +81,7 @@ function viewer() {
     this.outputPath = outputRoot;
     this.modelName = "";
     this.ignoredPart = [];
+    this.partsBtn = [];
 
     // Shortcut keys
     document.addEventListener("keydown", function (e) {
@@ -114,7 +122,7 @@ viewer.goto = function () {
 viewer.save = function (filepath) {
     // Save canvas to png file
     const paths = path.dirname(this.selectedPath);
-    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    thisRef.modelName = paths.substring(paths.lastIndexOf(separateChar) + 1);
     const dir = filepath || path.join(thisRef.outputPath, `${thisRef.modelName}.png`);
 
     const canvas = this.canvas;
@@ -129,7 +137,7 @@ viewer.save = function (filepath) {
 viewer.saveLayer = function(dirpath) {
     // Create dir
     const paths = path.dirname(this.selectedPath);
-    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    thisRef.modelName = paths.substring(paths.lastIndexOf(separateChar) + 1);
     const dir = dirpath || path.join(thisRef.outputPath, thisRef.modelName, 'layer');
     fs.mkdirSync(dir, { recursive: true });
 
@@ -156,13 +164,20 @@ viewer.saveLayer = function(dirpath) {
         let element = item.element;
         let partID = item.partID;
         let order = ("000" + index).slice(-4);
+        if (element.length === 0) {
+            return;
+        }
+        if (thisRef.ignoredPart.length > 0 && thisRef.ignoredPart.includes(partID)) {
+            return;
+        }
         gl.clear(gl.COLOR_BUFFER_BIT);
         model.drawElement(gl, element);
+        const subDir = partID;
         // Separate directory for each partID
-        if (!fs.existsSync(path.join(dir, partID))) {
-            fs.mkdirSync(path.join(dir, partID));
+        if (!fs.existsSync(path.join(dir, subDir))) {
+            fs.mkdirSync(path.join(dir, subDir));
         }
-        viewer.save(path.join(dir, partID, order + "_" + partID + ".png"));
+        viewer.save(path.join(dir, subDir, index.toString() + '-' + order + ".png"));
     });
 
     MatrixStack.pop();
@@ -190,7 +205,7 @@ viewer.savePart = function () {
     });
 
     const paths = path.dirname(this.selectedPath);
-    thisRef.modelName = paths.substring(paths.lastIndexOf('/') + 1);
+    thisRef.modelName = paths.substring(paths.lastIndexOf(separateChar) + 1);
     const dir = path.join(thisRef.outputPath, thisRef.modelName, 'parts');
     // Create dir
     fs.mkdirSync(dir, { recursive: true });
@@ -210,6 +225,13 @@ viewer.savePart = function () {
     MatrixStack.multMatrix(viewMatrix.getArray());
     MatrixStack.push();
 
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+
+    model.draw();
+    viewer.save(path.join(dir, "all_part.png"));
+
     let tempId = "";
     let tempOrder = 0;
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -228,9 +250,6 @@ viewer.savePart = function () {
         tempOrder += 1;
         if (tempId !== partID) {
             // const path = require("path");
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir);
-            }
             const fileName = `${index.toString()}-${tempId}-sub${tempOrder.toString()}.png`;
             viewer.save(path.join(dir, fileName));
             tempId = partID;
@@ -264,6 +283,12 @@ viewer.secret = function() {
     })
     console.log("[getPartIDs]", partId);
     console.log("[getParamIDs]", getParamIDs(modelImpl));
+    if (thisRef.partsBtn.length) {
+        while (div.lastElementChild) {
+            div.removeChild(div.lastElementChild);
+        }
+    }
+
     partId.forEach((id, index) => {
         const idElement = document.createElement('button');
         idElement.textContent = id;
@@ -273,6 +298,7 @@ viewer.secret = function() {
             console.log('id: ' + id);
             await viewer.drawExceptPart(id);
         })
+        thisRef.partsBtn.push(idElement);
     })
 
 };
@@ -431,6 +457,13 @@ function connectBtn() {
         thisRef.modelName = path.dirname(thisRef.selectedPath);
         console.log('selectedPath: ' + thisRef.selectedPath);
         const root = getModelPath(paths);
+        thisRef.ignoredPart = [];
+        if (thisRef.partsBtn.length) {
+            const div = document.getElementById('partid');
+            while (div.lastElementChild) {
+                div.removeChild(div.lastElementChild);
+            }
+        }
         loadModels(root);
         startDraw();
     });
@@ -501,7 +534,35 @@ function connectBtn() {
     btnNextMotion.addEventListener("click", function (e) {
         live2DMgr.nextIdleMotion();
     });
+    let allBtn = document.getElementById("outputAll");
+    allBtn.addEventListener("click", function (e) {
+        viewer.saveAll();
+    });
+}
 
+viewer.saveAll = async function () {
+    let txtInfo = document.getElementById("txtInfo");
+
+    let count = live2DMgr.getCount();
+    let allModels = live2DMgr.modelJsonList;
+    if (allModels.length < 1) {
+        return;
+    }
+
+    let curIndex = allModels.indexOf(this.selectedPath);
+    console.log('all models list: ' + allModels);
+
+    for (let i = 1; i < allModels.length + 1; i++) {
+        await viewer.save()
+        await viewer.saveLayer();
+        await viewer.savePart();
+        await viewer.changeModel();
+        await sleep(count * 2 + 150);
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function getModelPath(modelPath) {
@@ -516,10 +577,10 @@ function getModelPath(modelPath) {
     return paths.toString();
 }
 
-async function loadModels(path) {
+async function loadModels(paths) {
     // Load all models
     let files = [];
-    let dir = path ? path : datasetRoot;
+    let dir = paths ? paths : datasetRoot;
     console.log(dir);
     walkdir(dir, function (filepath) {
         if (filepath.endsWith(".moc")) {
@@ -695,7 +756,7 @@ viewer.changeModel = function (inc = 1) {
     live2DMgr.reloadFlg = true;
     live2DMgr.count += inc;
 
-    txtInfo = document.getElementById("txtInfo");
+    let txtInfo = document.getElementById("txtInfo");
 
     let count = live2DMgr.getCount();
     let curModelPath = live2DMgr.modelJsonList[count];

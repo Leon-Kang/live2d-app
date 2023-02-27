@@ -557,7 +557,7 @@ viewer.saveAll = async function () {
         await viewer.saveLayer();
         await viewer.savePart();
         await viewer.changeModel();
-        await sleep(count * 2 + 50);
+        await sleep(count * 2 + 150);
     }
 }
 

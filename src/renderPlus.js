@@ -225,6 +225,13 @@ viewer.savePart = function () {
     MatrixStack.multMatrix(viewMatrix.getArray());
     MatrixStack.push();
 
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+
+    model.draw();
+    viewer.save(path.join(dir, "all_part.png"));
+
     let tempId = "";
     let tempOrder = 0;
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -243,9 +250,6 @@ viewer.savePart = function () {
         tempOrder += 1;
         if (tempId !== partID) {
             // const path = require("path");
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir);
-            }
             const fileName = `${index.toString()}-${tempId}-sub${tempOrder.toString()}.png`;
             viewer.save(path.join(dir, fileName));
             tempId = partID;
@@ -530,7 +534,35 @@ function connectBtn() {
     btnNextMotion.addEventListener("click", function (e) {
         live2DMgr.nextIdleMotion();
     });
+    let allBtn = document.getElementById("outputAll");
+    allBtn.addEventListener("click", function (e) {
+        viewer.saveAll();
+    });
+}
 
+viewer.saveAll = async function () {
+    let txtInfo = document.getElementById("txtInfo");
+
+    let count = live2DMgr.getCount();
+    let allModels = live2DMgr.modelJsonList;
+    if (allModels.length < 1) {
+        return;
+    }
+
+    let curIndex = allModels.indexOf(this.selectedPath);
+    console.log('all models list: ' + allModels);
+
+    for (let i = 1; i < allModels.length + 1; i++) {
+        await viewer.save()
+        await viewer.saveLayer();
+        await viewer.savePart();
+        await viewer.changeModel();
+        await sleep(count * 2 + 150);
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function getModelPath(modelPath) {
@@ -545,10 +577,10 @@ function getModelPath(modelPath) {
     return paths.toString();
 }
 
-async function loadModels(path) {
+async function loadModels(paths) {
     // Load all models
     let files = [];
-    let dir = path ? path : datasetRoot;
+    let dir = paths ? paths : datasetRoot;
     console.log(dir);
     walkdir(dir, function (filepath) {
         if (filepath.endsWith(".moc")) {
@@ -724,7 +756,7 @@ viewer.changeModel = function (inc = 1) {
     live2DMgr.reloadFlg = true;
     live2DMgr.count += inc;
 
-    txtInfo = document.getElementById("txtInfo");
+    let txtInfo = document.getElementById("txtInfo");
 
     let count = live2DMgr.getCount();
     let curModelPath = live2DMgr.modelJsonList[count];
